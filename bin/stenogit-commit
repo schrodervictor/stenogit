@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# config-tracker-commit — stage and commit any changes in $DIR.
+# stenogit-commit — stage and commit any changes in $DIR.
 #
 # Reads from environment:
 #   DIR              (required) target directory; must already be a git repo
@@ -10,35 +10,35 @@
 # Exits 0 on success, including when there is nothing to commit (no-op).
 # Exits non-zero with a clear message on misconfiguration.
 
-ct_check_dir() {
+sg_check_dir() {
     local dir="$1"
     if [[ -z "$dir" ]]; then
-        printf 'config-tracker-commit: DIR is required\n' >&2
+        printf 'stenogit-commit: DIR is required\n' >&2
         return 1
     fi
     if [[ ! -d "$dir" ]]; then
-        printf 'config-tracker-commit: directory does not exist: %s\n' "$dir" >&2
+        printf 'stenogit-commit: directory does not exist: %s\n' "$dir" >&2
         return 1
     fi
     if [[ ! -d "$dir/.git" ]]; then
-        printf 'config-tracker-commit: not a git repository: %s (run `config-tracker add` first)\n' "$dir" >&2
+        printf 'stenogit-commit: not a git repository: %s (run `stenogit add` first)\n' "$dir" >&2
         return 1
     fi
 }
 
-ct_stage_all() {
+sg_stage_all() {
     git -C "$1" add -A
 }
 
-ct_has_staged_changes() {
+sg_has_staged_changes() {
     ! git -C "$1" diff --cached --quiet
 }
 
-ct_count_staged() {
+sg_count_staged() {
     git -C "$1" diff --cached --name-only | wc -l
 }
 
-ct_expand_template() {
+sg_expand_template() {
     local template="$1"
     local instance="$2"
     local count="$3"
@@ -50,11 +50,11 @@ ct_expand_template() {
     printf '%s' "$result"
 }
 
-ct_do_commit() {
+sg_do_commit() {
     git -C "$1" commit -q -m "$2"
 }
 
-ct_main() {
+sg_main() {
     local dir="${DIR:-}"
     local instance="${INSTANCE:-default}"
     # Note: cannot use ${MESSAGE_TEMPLATE:-auto: {date}} — bash ${...}
@@ -63,20 +63,20 @@ ct_main() {
     local template="${MESSAGE_TEMPLATE:-}"
     [[ -n "$template" ]] || template='auto: {date}'
 
-    ct_check_dir "$dir" || return 1
-    ct_stage_all "$dir" || return 1
+    sg_check_dir "$dir" || return 1
+    sg_stage_all "$dir" || return 1
 
-    if ! ct_has_staged_changes "$dir"; then
+    if ! sg_has_staged_changes "$dir"; then
         return 0
     fi
 
     local count message
-    count=$(ct_count_staged "$dir")
-    message=$(ct_expand_template "$template" "$instance" "$count")
-    ct_do_commit "$dir" "$message"
+    count=$(sg_count_staged "$dir")
+    message=$(sg_expand_template "$template" "$instance" "$count")
+    sg_do_commit "$dir" "$message"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     set -euo pipefail
-    ct_main "$@"
+    sg_main "$@"
 fi

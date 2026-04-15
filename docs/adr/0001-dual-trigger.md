@@ -5,7 +5,7 @@
 
 ## Context and problem statement
 
-The config tracker watches a directory and commits changes to git
+Stenogit watches a directory and commits changes to git
 automatically. The trigger mechanism — *when* a commit fires — has a
 real impact on how well the tool fits a given directory.
 
@@ -40,9 +40,9 @@ CLI.
 ## Consequences
 
 - Two systemd unit families:
-  - `config-tracker@.timer` (scheduled)
-  - `config-tracker-watch@.service` (inotify, long-running)
-- A single `config-tracker-commit` script reused by both.
+  - `stenogit@.timer` (scheduled)
+  - `stenogit-watch@.service` (inotify, long-running)
+- A single `stenogit-commit` script reused by both.
 - The CLI accepts either `--schedule <interval>` or `--watch` at `add`
   time and enables the corresponding unit.
 - If both are accidentally enabled for the same instance they do not

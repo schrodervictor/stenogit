@@ -36,9 +36,9 @@ Option 2. Three layers:
 
 | Layer                | Where                                                                     | Holds                                  |
 |----------------------|---------------------------------------------------------------------------|----------------------------------------|
-| Env file             | `~/.config/config-tracker/<name>.conf`                                    | `DIR`, `MESSAGE_TEMPLATE`, `DEBOUNCE`  |
+| Env file             | `~/.config/stenogit/<name>.conf`                                    | `DIR`, `MESSAGE_TEMPLATE`, `DEBOUNCE`  |
 | Per-repo git config  | `<DIR>/.git/config`                                                       | `user.name`, `user.email`, GPG knobs   |
-| Systemd timer drop-in| `~/.config/systemd/user/config-tracker@<name>.timer.d/schedule.conf`      | `OnUnitActiveSec=`                     |
+| Systemd timer drop-in| `~/.config/systemd/user/stenogit@<name>.timer.d/schedule.conf`      | `OnUnitActiveSec=`                     |
 
 ## Consequences
 
@@ -47,7 +47,7 @@ Option 2. Three layers:
 - Schedule changes do not require touching the conf file; conf changes
   do not require touching systemd.
 - Three places to look when something is off — mitigated by
-  `config-tracker status` (future) and by the CLI being the canonical
+  `stenogit status` (future) and by the CLI being the canonical
   edit interface.
 - Bats tests exercise each layer in isolation.
 - See `docs/parameterization.md` for the user-facing how-to.

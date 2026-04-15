@@ -34,17 +34,17 @@ A Makefile drives everything with these variables:
 Install layout:
 
 ```
-$PREFIX/bin/config-tracker
-$PREFIX/bin/config-tracker-commit
-$PREFIX/bin/config-tracker-watch
-$PREFIX/lib/systemd/user/config-tracker@.service
-$PREFIX/lib/systemd/user/config-tracker@.timer
-$PREFIX/lib/systemd/user/config-tracker-watch@.service
-$PREFIX/share/config-tracker/example.conf
+$PREFIX/bin/stenogit
+$PREFIX/bin/stenogit-commit
+$PREFIX/bin/stenogit-watch
+$PREFIX/lib/systemd/user/stenogit@.service
+$PREFIX/lib/systemd/user/stenogit@.timer
+$PREFIX/lib/systemd/user/stenogit-watch@.service
+$PREFIX/share/stenogit/example.conf
 ```
 
-Per-user state lives in `$XDG_CONFIG_HOME/config-tracker/` (i.e.
-`~/.config/config-tracker/`).
+Per-user state lives in `$XDG_CONFIG_HOME/stenogit/` (i.e.
+`~/.config/stenogit/`).
 
 ## Consequences
 

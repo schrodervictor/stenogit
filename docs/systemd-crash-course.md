@@ -1,6 +1,6 @@
 # Systemd templated units — crash course
 
-Reference for the templated-unit pattern used by config-tracker. This is
+Reference for the templated-unit pattern used by stenogit. This is
 not a decision document — it is preserved instructional material so future
 sessions can be cleaned without losing context.
 
@@ -123,7 +123,7 @@ systemctl --user list-timers                        # see scheduled units
   and stick with it; do not mix.
 
 - **User units stop at logout** unless you run
-  `loginctl enable-linger $USER` once. For an unattended config tracker
+  `loginctl enable-linger $USER` once. For an unattended stenogit instance
   you almost certainly want lingering on.
 
 - **`daemon-reload` is required** after any unit-file or drop-in change,
@@ -136,13 +136,13 @@ systemctl --user list-timers                        # see scheduled units
   script — systemd waits for it to finish and tracks success/failure
   correctly. Do not use the default `Type=simple` for short-lived scripts.
 
-## How this maps to config-tracker
+## How this maps to stenogit
 
-- `config-tracker@.service` (oneshot) — runs the commit script, reads
-  `~/.config/config-tracker/%i.conf` for `DIR`, `MESSAGE_TEMPLATE`.
-- `config-tracker@.timer` — default schedule; per-instance overrides
-  via drop-ins written by `config-tracker add --schedule …`.
-- `config-tracker-watch@.service` — long-running inotify variant, same
+- `stenogit@.service` (oneshot) — runs the commit script, reads
+  `~/.config/stenogit/%i.conf` for `DIR`, `MESSAGE_TEMPLATE`.
+- `stenogit@.timer` — default schedule; per-instance overrides
+  via drop-ins written by `stenogit add --schedule …`.
+- `stenogit-watch@.service` — long-running inotify variant, same
   conf file.
-- The `config-tracker` CLI writes the conf, optionally writes the
+- The `stenogit` CLI writes the conf, optionally writes the
   drop-in, runs `daemon-reload`, and enables the right unit.

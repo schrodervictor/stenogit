@@ -1,10 +1,10 @@
 [Unit]
-Description=Config tracker timer for %i
+Description=Stenogit timer for %i
 
 [Timer]
 OnBootSec=1min
 OnUnitActiveSec=15min
-Unit=config-tracker@%i.service
+Unit=stenogit@%i.service
 
 [Install]
 WantedBy=timers.target

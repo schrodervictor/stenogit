@@ -25,7 +25,7 @@ degradation, not for ensuring tools exist.
 ## Debian: `debian/control` is the canonical place
 
 ```
-Package: config-tracker
+Package: stenogit
 Section: utils
 Architecture: all
 Depends: git, inotify-tools, systemd, bash (>= 4)
@@ -54,8 +54,8 @@ If a `.deb` may install the same units as an ad-hoc install, the
 must be absolute under `$PREFIX`:
 
 ```
-ExecStart=/usr/bin/config-tracker-commit         # .deb (PREFIX=/usr)
-ExecStart=/usr/local/bin/config-tracker-commit   # ad-hoc (PREFIX=/usr/local)
+ExecStart=/usr/bin/stenogit-commit         # .deb (PREFIX=/usr)
+ExecStart=/usr/local/bin/stenogit-commit   # ad-hoc (PREFIX=/usr/local)
 ```
 
 Hence the `*.in` template files with `@BINDIR@` substituted at build

@@ -1,0 +1,14 @@
+[Unit]
+Description=Stenogit watcher for %i
+ConditionPathExists=%h/.config/stenogit/%i.conf
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.config/stenogit/%i.conf
+Environment=INSTANCE=%i
+ExecStart=@BINDIR@/stenogit-watch
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

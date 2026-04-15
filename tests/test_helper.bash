@@ -10,8 +10,8 @@ setup_temp_home() {
     export HOME="$BATS_TEST_TMPDIR/home"
     mkdir -p "$HOME"
     export XDG_CONFIG_HOME="$HOME/.config"
-    export CONFIG_TRACKER_CONFIG_DIR="$HOME/.config/config-tracker"
-    export CONFIG_TRACKER_SYSTEMD_DIR="$HOME/.config/systemd/user"
+    export STENOGIT_CONFIG_DIR="$HOME/.config/stenogit"
+    export STENOGIT_SYSTEMD_DIR="$HOME/.config/systemd/user"
 }
 
 # Create a fresh git repo under the test tmpdir with a usable identity,

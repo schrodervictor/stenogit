@@ -7,7 +7,7 @@
 
 The bats test suite creates git repos, writes conf files, and invokes
 a mocked systemctl. A test bug or a stray path could overwrite real
-state in the user's `~/.config/config-tracker/` or stomp on a real git
+state in the user's `~/.config/stenogit/` or stomp on a real git
 repo. Additionally, the user does not want to install bats or
 inotify-tools on the host just to run tests.
 

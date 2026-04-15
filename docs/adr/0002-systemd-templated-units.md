@@ -10,7 +10,7 @@ own configuration, schedule, and trigger. Unattended startup, restart
 on failure, journal logging, and lifecycle management are all
 non-trivial to reimplement; systemd already does them well.
 
-We need a way to express "many tracker instances" without the
+We need a way to express "many stenogit instances" without the
 unit-file count growing with the instance count.
 
 ## Decision drivers
@@ -26,20 +26,20 @@ unit-file count growing with the instance count.
 2. **A custom orchestrator daemon** that reads a single config file
    and spawns watchers / scheduled jobs itself. Re-implements systemd
    functionality.
-3. **Templated units** (`config-tracker@.service`) instantiated by
+3. **Templated units** (`stenogit@.service`) instantiated by
    name. One file on disk, N instances at runtime.
 
 ## Decision
 
 Option 3 — templated units, with the instance name (`%i`) keying the
-per-instance configuration file at `~/.config/config-tracker/<name>.conf`.
+per-instance configuration file at `~/.config/stenogit/<name>.conf`.
 
 ## Consequences
 
 - Three unit files in the repo, regardless of how many instances exist.
 - Per-instance overrides via systemd drop-ins (used for schedule).
 - The user-facing primitive is
-  `systemctl --user enable config-tracker@<name>.timer`; the CLI wraps
+  `systemctl --user enable stenogit@<name>.timer`; the CLI wraps
   it.
 - All systemd lifecycle features (restart, status, journal) work for
   free per instance.

@@ -5,7 +5,7 @@
 
 ## Context and problem statement
 
-`config-tracker-commit` could call `git init` if the target directory
+`stenogit-commit` could call `git init` if the target directory
 is not yet a git repo. This sounds friendly but introduces problems:
 
 - It would have to also set git identity (otherwise the commit fails),
@@ -19,7 +19,7 @@ is not yet a git repo. This sounds friendly but introduces problems:
 
 The commit script refuses to run on a directory that is not already a
 git repo. It exits non-zero with a clear error pointing the user at
-`config-tracker add`.
+`stenogit add`.
 
 Repository initialization and identity setup are the CLI's `add`
 command's responsibility.
@@ -31,5 +31,5 @@ command's responsibility.
 - Tests can assert "non-git dir → error" without contortions.
 - The CLI is the only place `git init` lives → easier to test and
   reason about.
-- `config-tracker add` may be enhanced to detect and skip init for an
+- `stenogit add` may be enhanced to detect and skip init for an
   already-existing git repo, but the commit script never touches it.

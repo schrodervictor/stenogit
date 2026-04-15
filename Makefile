@@ -1,31 +1,31 @@
 PREFIX    ?= /usr/local
 DESTDIR   ?=
 CONTAINER ?= podman
-IMAGE     ?= config-tracker-test
+IMAGE     ?= stenogit-test
 
 BINDIR   := $(PREFIX)/bin
 UNITDIR  := $(PREFIX)/lib/systemd/user
-SHAREDIR := $(PREFIX)/share/config-tracker
+SHAREDIR := $(PREFIX)/share/stenogit
 
 BUILD_DIR := build
 
 UNIT_TEMPLATES := \
-    systemd/config-tracker@.service.in \
-    systemd/config-tracker-watch@.service.in
+    systemd/stenogit@.service.in \
+    systemd/stenogit-watch@.service.in
 UNIT_RENDERED := \
-    $(BUILD_DIR)/systemd/config-tracker@.service \
-    $(BUILD_DIR)/systemd/config-tracker-watch@.service
+    $(BUILD_DIR)/systemd/stenogit@.service \
+    $(BUILD_DIR)/systemd/stenogit-watch@.service
 UNIT_PLAIN := \
-    systemd/config-tracker@.timer
+    systemd/stenogit@.timer
 UNIT_COPIED := \
-    $(BUILD_DIR)/systemd/config-tracker@.timer
+    $(BUILD_DIR)/systemd/stenogit@.timer
 
 BUILT_UNITS := $(UNIT_RENDERED) $(UNIT_COPIED)
 
 SCRIPTS := \
-    bin/config-tracker \
-    bin/config-tracker-commit \
-    bin/config-tracker-watch
+    bin/stenogit \
+    bin/stenogit-commit \
+    bin/stenogit-watch
 
 .PHONY: all build test image install uninstall clean
 
@@ -56,12 +56,12 @@ install: build
 	install -m 0644 examples/example.conf $(DESTDIR)$(SHAREDIR)/
 
 uninstall:
-	rm -f $(DESTDIR)$(BINDIR)/config-tracker
-	rm -f $(DESTDIR)$(BINDIR)/config-tracker-commit
-	rm -f $(DESTDIR)$(BINDIR)/config-tracker-watch
-	rm -f $(DESTDIR)$(UNITDIR)/config-tracker@.service
-	rm -f $(DESTDIR)$(UNITDIR)/config-tracker@.timer
-	rm -f $(DESTDIR)$(UNITDIR)/config-tracker-watch@.service
+	rm -f $(DESTDIR)$(BINDIR)/stenogit
+	rm -f $(DESTDIR)$(BINDIR)/stenogit-commit
+	rm -f $(DESTDIR)$(BINDIR)/stenogit-watch
+	rm -f $(DESTDIR)$(UNITDIR)/stenogit@.service
+	rm -f $(DESTDIR)$(UNITDIR)/stenogit@.timer
+	rm -f $(DESTDIR)$(UNITDIR)/stenogit-watch@.service
 	rm -f $(DESTDIR)$(SHAREDIR)/example.conf
 
 clean:

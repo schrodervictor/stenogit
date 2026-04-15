@@ -1,4 +1,4 @@
-# Config Tracker — Build Plan
+# Stenogit — Build Plan
 
 ## Goal
 
@@ -11,18 +11,18 @@ package-friendly (eventual `.deb`), no logic in systemd unit files.
 
 Three executables plus a thin layer of systemd wiring:
 
-1. **`config-tracker-commit`** — pure shell script. Reads env vars (`DIR`,
+1. **`stenogit-commit`** — pure shell script. Reads env vars (`DIR`,
    `INSTANCE`, `MESSAGE_TEMPLATE`), stages all changes in `DIR`, commits
    if anything is staged, expanding placeholders in the message template.
    Idempotent: a no-op when there are no changes. Refuses to operate on a
    non-git directory (no auto-init).
 
-2. **`config-tracker-watch`** — pure shell script. Runs `inotifywait -mr`
+2. **`stenogit-watch`** — pure shell script. Runs `inotifywait -mr`
    on `DIR`, debounces bursts (waits for a quiet window of `DEBOUNCE`
-   seconds), then invokes `config-tracker-commit` as a subprocess. Reads
+   seconds), then invokes `stenogit-commit` as a subprocess. Reads
    the same env vars plus `DEBOUNCE`.
 
-3. **`config-tracker`** — CLI that hides systemd from end users.
+3. **`stenogit`** — CLI that hides systemd from end users.
    Subcommands:
    - `add <name> <dir> [--schedule <interval> | --watch] [--message <tpl>] [--git-name <n>] [--git-email <e>] [--debounce <s>]`
    - `remove <name>`
@@ -30,7 +30,7 @@ Three executables plus a thin layer of systemd wiring:
    - `status <name>`
 
    `add` initialises the git repo in `<dir>`, sets the local git identity,
-   writes `~/.config/config-tracker/<name>.conf`, optionally writes a
+   writes `~/.config/stenogit/<name>.conf`, optionally writes a
    systemd timer drop-in for the schedule, and enables the appropriate
    systemd user unit.
 
@@ -39,26 +39,26 @@ Systemd wires the components. Unit files contain only `Type=`,
 
 ## Components — systemd units
 
-- `config-tracker@.service` — `Type=oneshot`. ExecStart calls
-  `config-tracker-commit`. `EnvironmentFile=%h/.config/config-tracker/%i.conf`.
+- `stenogit@.service` — `Type=oneshot`. ExecStart calls
+  `stenogit-commit`. `EnvironmentFile=%h/.config/stenogit/%i.conf`.
   `Environment=INSTANCE=%i`.
-- `config-tracker@.timer` — default schedule (e.g. `OnUnitActiveSec=15min`).
+- `stenogit@.timer` — default schedule (e.g. `OnUnitActiveSec=15min`).
   Per-instance schedule overridden via drop-in
-  (`config-tracker@<name>.timer.d/schedule.conf`).
-- `config-tracker-watch@.service` — long-running. ExecStart calls
-  `config-tracker-watch`. Same env-file pattern. `Restart=on-failure`.
+  (`stenogit@<name>.timer.d/schedule.conf`).
+- `stenogit-watch@.service` — long-running. ExecStart calls
+  `stenogit-watch`. Same env-file pattern. `Restart=on-failure`.
 
 ## Repository layout
 
 ```
 bin/
-  config-tracker
-  config-tracker-commit
-  config-tracker-watch
+  stenogit
+  stenogit-commit
+  stenogit-watch
 systemd/
-  config-tracker@.service.in
-  config-tracker@.timer
-  config-tracker-watch@.service.in
+  stenogit@.service.in
+  stenogit@.timer
+  stenogit-watch@.service.in
 tests/
   test_helper.bash
   test_commit.bats
@@ -85,18 +85,18 @@ to `build/systemd/`. This lets the same unit work at any `PREFIX`.
 ## Install layout (filesystem)
 
 ```
-$PREFIX/bin/config-tracker
-$PREFIX/bin/config-tracker-commit
-$PREFIX/bin/config-tracker-watch
-$PREFIX/lib/systemd/user/config-tracker@.service
-$PREFIX/lib/systemd/user/config-tracker@.timer
-$PREFIX/lib/systemd/user/config-tracker-watch@.service
-$PREFIX/share/config-tracker/example.conf
+$PREFIX/bin/stenogit
+$PREFIX/bin/stenogit-commit
+$PREFIX/bin/stenogit-watch
+$PREFIX/lib/systemd/user/stenogit@.service
+$PREFIX/lib/systemd/user/stenogit@.timer
+$PREFIX/lib/systemd/user/stenogit-watch@.service
+$PREFIX/share/stenogit/example.conf
 ```
 
 `PREFIX` defaults to `/usr/local` (ad-hoc install). The future `.deb`
 overrides to `PREFIX=/usr`. Per-user state lives in
-`$XDG_CONFIG_HOME/config-tracker/` (i.e. `~/.config/config-tracker/`),
+`$XDG_CONFIG_HOME/stenogit/` (i.e. `~/.config/stenogit/`),
 never inside `$PREFIX`.
 
 ## Build system — Makefile
@@ -105,7 +105,7 @@ Variables:
 - `PREFIX ?= /usr/local`
 - `DESTDIR ?=`
 - `CONTAINER ?= podman`
-- `IMAGE ?= config-tracker-test`
+- `IMAGE ?= stenogit-test`
 
 Targets:
 - `build` — render `systemd/*.in` → `build/systemd/*` with `@BINDIR@`
@@ -146,7 +146,7 @@ so the edit-test cycle is fast.
 - Two events separated by more than the window trigger two commits.
 - The actual `inotifywait` wiring is not unit-tested — the debounce
   loop is tested in isolation by feeding lines into stdin and observing
-  invocations of a fake commit binary set via `CONFIG_TRACKER_COMMIT`.
+  invocations of a fake commit binary set via `STENOGIT_COMMIT`.
 
 ### `test_cli.bats`
 - `add` rejects names containing slashes or shell metachars.
@@ -157,8 +157,8 @@ so the edit-test cycle is fast.
 - `add` writes the conf file with expected keys.
 - `add --schedule 5min` writes a timer drop-in containing
   `OnUnitActiveSec=5min`.
-- `add --watch` enables `config-tracker-watch@<name>.service`.
-- `add` (default) enables `config-tracker@<name>.timer`.
+- `add --watch` enables `stenogit-watch@<name>.service`.
+- `add` (default) enables `stenogit@<name>.timer`.
 - `remove` deletes the conf file.
 - `remove` disables the systemd unit.
 - `list` shows configured instances.
@@ -190,7 +190,7 @@ Bats sources the script and calls individual functions or `main` directly.
 ## Future work
 
 - `debian/` directory with `control`, `rules`, `changelog` for `.deb`.
-- `config-tracker status <name>` summarising last commit, current trigger,
+- `stenogit status <name>` summarising last commit, current trigger,
   last error from journal.
 - Optional GPG-signing per instance (set in repo config at `add` time).
 
