@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+#
+# config-tracker-commit — stage and commit any changes in $DIR.
+#
+# Reads from environment:
+#   DIR              (required) target directory; must already be a git repo
+#   INSTANCE         (optional) instance name, used in {name} placeholder
+#   MESSAGE_TEMPLATE (optional) commit message template, default "auto: {date}"
+#
+# Exits 0 on success, including when there is nothing to commit (no-op).
+# Exits non-zero with a clear message on misconfiguration.
+
+ct_check_dir() {
+    local dir="$1"
+    if [[ -z "$dir" ]]; then
+        printf 'config-tracker-commit: DIR is required\n' >&2
+        return 1
+    fi
+    if [[ ! -d "$dir" ]]; then
+        printf 'config-tracker-commit: directory does not exist: %s\n' "$dir" >&2
+        return 1
+    fi
+    if [[ ! -d "$dir/.git" ]]; then
+        printf 'config-tracker-commit: not a git repository: %s (run `config-tracker add` first)\n' "$dir" >&2
+        return 1
+    fi
+}
+
+ct_stage_all() {
+    git -C "$1" add -A
+}
+
+ct_has_staged_changes() {
+    ! git -C "$1" diff --cached --quiet
+}
+
+ct_count_staged() {
+    git -C "$1" diff --cached --name-only | wc -l
+}
+
+ct_expand_template() {
+    local template="$1"
+    local instance="$2"
+    local count="$3"
+    local result="$template"
+    result="${result//\{date\}/$(date -Iseconds)}"
+    result="${result//\{count\}/$count}"
+    result="${result//\{host\}/$(hostname)}"
+    result="${result//\{name\}/$instance}"
+    printf '%s' "$result"
+}
+
+ct_do_commit() {
+    git -C "$1" commit -q -m "$2"
+}
+
+ct_main() {
+    local dir="${DIR:-}"
+    local instance="${INSTANCE:-default}"
+    local template="${MESSAGE_TEMPLATE:-auto: {date}}"
+
+    ct_check_dir "$dir" || return 1
+    ct_stage_all "$dir" || return 1
+
+    if ! ct_has_staged_changes "$dir"; then
+        return 0
+    fi
+
+    local count message
+    count=$(ct_count_staged "$dir")
+    message=$(ct_expand_template "$template" "$instance" "$count")
+    ct_do_commit "$dir" "$message"
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    set -euo pipefail
+    ct_main "$@"
+fi

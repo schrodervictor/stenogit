@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+#
+# config-tracker-watch — long-running inotify watcher that triggers
+# config-tracker-commit after a quiet window (DEBOUNCE seconds).
+#
+# Reads from environment:
+#   DIR                    (required) directory to watch (recursive)
+#   DEBOUNCE               (optional) quiet-window seconds, default 5
+#   CONFIG_TRACKER_COMMIT  (optional) commit command, default "config-tracker-commit"
+#
+# All other env vars (INSTANCE, MESSAGE_TEMPLATE) are passed through to the
+# commit command unchanged.
+
+ctw_run_commit() {
+    local cmd="${CONFIG_TRACKER_COMMIT:-config-tracker-commit}"
+    "$cmd"
+}
+
+ctw_debounce_loop() {
+    local debounce="$1"
+    local line
+    while read -r line; do
+        # Drain further events; each new event resets the timer.
+        # When `read -t` times out the inner loop ends and we fire.
+        while read -r -t "$debounce" line; do
+            :
+        done
+        ctw_run_commit || true
+    done
+}
+
+ctw_main() {
+    local dir="${DIR:-}"
+    local debounce="${DEBOUNCE:-5}"
+
+    if [[ -z "$dir" ]]; then
+        printf 'config-tracker-watch: DIR is required\n' >&2
+        return 1
+    fi
+    if [[ ! -d "$dir" ]]; then
+        printf 'config-tracker-watch: directory does not exist: %s\n' "$dir" >&2
+        return 1
+    fi
+
+    inotifywait -m -r -q -e modify,create,delete,move "$dir" \
+        | ctw_debounce_loop "$debounce"
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    set -euo pipefail
+    ctw_main "$@"
+fi

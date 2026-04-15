@@ -1,0 +1,203 @@
+#!/usr/bin/env bash
+#
+# config-tracker — CLI that hides systemd from end users.
+#
+# Subcommands:
+#   add <name> <dir> [options]   Register a new tracked directory
+#   remove <name>                Unregister a tracked directory
+#   list                         List configured instances
+#
+# add options:
+#   --schedule <interval>     Use a systemd timer (e.g. 10min, 1h)
+#   --watch                   Use inotify watcher (mutually exclusive with --schedule)
+#   --message <template>      Commit message template
+#   --debounce <seconds>      Debounce window for --watch (default 5)
+#   --git-name <name>         Git user.name for the tracked repo
+#   --git-email <email>       Git user.email for the tracked repo
+#
+# Per-user state lives under $XDG_CONFIG_HOME (default ~/.config). Tests
+# override CONFIG_TRACKER_CONFIG_DIR and CONFIG_TRACKER_SYSTEMD_DIR.
+
+: "${CONFIG_TRACKER_CONFIG_DIR:=${XDG_CONFIG_HOME:-$HOME/.config}/config-tracker}"
+: "${CONFIG_TRACKER_SYSTEMD_DIR:=${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user}"
+
+ct_usage() {
+    cat <<'EOF'
+Usage:
+  config-tracker add <name> <dir> [options]
+  config-tracker remove <name>
+  config-tracker list
+
+Options for add:
+  --schedule <interval>     Use a systemd timer (e.g. 10min, 1h)
+  --watch                   Use inotify watcher (mutually exclusive with --schedule)
+  --message <template>      Commit message template
+  --debounce <seconds>      Debounce window for --watch (default 5)
+  --git-name <name>         Git user.name for the tracked repo
+  --git-email <email>       Git user.email for the tracked repo
+EOF
+}
+
+ct_validate_name() {
+    local name="$1"
+    if [[ -z "$name" ]]; then
+        printf 'config-tracker: instance name is required\n' >&2
+        return 1
+    fi
+    if [[ ! "$name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+        printf 'config-tracker: invalid instance name: %s (use [a-zA-Z0-9_-]+)\n' "$name" >&2
+        return 1
+    fi
+}
+
+ct_init_repo() {
+    local dir="$1"
+    local git_name="${2:-Config Tracker}"
+    local git_email="${3:-tracker@$(hostname)}"
+    if [[ ! -d "$dir/.git" ]]; then
+        git -C "$dir" init -q
+    fi
+    git -C "$dir" config user.name "$git_name"
+    git -C "$dir" config user.email "$git_email"
+}
+
+ct_write_conf() {
+    local name="$1" dir="$2" message="$3" debounce="$4"
+    mkdir -p "$CONFIG_TRACKER_CONFIG_DIR"
+    local conf="$CONFIG_TRACKER_CONFIG_DIR/$name.conf"
+    {
+        printf 'DIR=%s\n' "$dir"
+        printf 'MESSAGE_TEMPLATE=%s\n' "$message"
+        printf 'DEBOUNCE=%s\n' "$debounce"
+    } > "$conf"
+}
+
+ct_remove_conf() {
+    local name="$1"
+    rm -f "$CONFIG_TRACKER_CONFIG_DIR/$name.conf"
+}
+
+ct_write_schedule_dropin() {
+    local name="$1" interval="$2"
+    local dir="$CONFIG_TRACKER_SYSTEMD_DIR/config-tracker@$name.timer.d"
+    mkdir -p "$dir"
+    cat > "$dir/schedule.conf" <<EOF
+[Timer]
+OnUnitActiveSec=
+OnUnitActiveSec=$interval
+EOF
+}
+
+ct_remove_schedule_dropin() {
+    local name="$1"
+    rm -rf "$CONFIG_TRACKER_SYSTEMD_DIR/config-tracker@$name.timer.d"
+}
+
+ct_systemctl() {
+    systemctl --user "$@"
+}
+
+ct_enable_timer() {
+    local name="$1"
+    ct_systemctl daemon-reload
+    ct_systemctl enable --now "config-tracker@$name.timer"
+}
+
+ct_enable_watch() {
+    local name="$1"
+    ct_systemctl daemon-reload
+    ct_systemctl enable --now "config-tracker-watch@$name.service"
+}
+
+ct_disable_all() {
+    local name="$1"
+    ct_systemctl disable --now "config-tracker@$name.timer" 2>/dev/null || true
+    ct_systemctl disable --now "config-tracker-watch@$name.service" 2>/dev/null || true
+}
+
+cmd_add() {
+    local name="" dir="" message="auto: {date}"
+    local schedule="" watch=0 debounce=5
+    local git_name="" git_email=""
+
+    if [[ $# -lt 2 ]]; then
+        ct_usage >&2
+        return 1
+    fi
+    name="$1"; shift
+    dir="$1"; shift
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --schedule)  schedule="$2";   shift 2 ;;
+            --watch)     watch=1;         shift ;;
+            --message)   message="$2";    shift 2 ;;
+            --debounce)  debounce="$2";   shift 2 ;;
+            --git-name)  git_name="$2";   shift 2 ;;
+            --git-email) git_email="$2";  shift 2 ;;
+            *)
+                printf 'config-tracker: unknown option: %s\n' "$1" >&2
+                return 1
+                ;;
+        esac
+    done
+
+    ct_validate_name "$name" || return 1
+
+    if [[ ! -d "$dir" ]]; then
+        printf 'config-tracker: directory does not exist: %s\n' "$dir" >&2
+        return 1
+    fi
+
+    if [[ -n "$schedule" && "$watch" -eq 1 ]]; then
+        printf 'config-tracker: --schedule and --watch are mutually exclusive\n' >&2
+        return 1
+    fi
+
+    ct_init_repo "$dir" "$git_name" "$git_email" || return 1
+    ct_write_conf "$name" "$dir" "$message" "$debounce" || return 1
+
+    if [[ "$watch" -eq 1 ]]; then
+        ct_enable_watch "$name" || return 1
+    else
+        if [[ -n "$schedule" ]]; then
+            ct_write_schedule_dropin "$name" "$schedule" || return 1
+        fi
+        ct_enable_timer "$name" || return 1
+    fi
+}
+
+cmd_remove() {
+    local name="${1:-}"
+    ct_validate_name "$name" || return 1
+    ct_disable_all "$name"
+    ct_remove_schedule_dropin "$name"
+    ct_remove_conf "$name"
+}
+
+cmd_list() {
+    [[ -d "$CONFIG_TRACKER_CONFIG_DIR" ]] || return 0
+    local conf
+    shopt -s nullglob
+    for conf in "$CONFIG_TRACKER_CONFIG_DIR"/*.conf; do
+        basename "$conf" .conf
+    done
+    shopt -u nullglob
+}
+
+ct_main() {
+    local cmd="${1:-}"
+    [[ $# -gt 0 ]] && shift
+    case "$cmd" in
+        add)         cmd_add "$@" ;;
+        remove|rm)   cmd_remove "$@" ;;
+        list|ls)     cmd_list "$@" ;;
+        ""|-h|--help|help) ct_usage ;;
+        *)           ct_usage >&2; return 1 ;;
+    esac
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    set -euo pipefail
+    ct_main "$@"
+fi
