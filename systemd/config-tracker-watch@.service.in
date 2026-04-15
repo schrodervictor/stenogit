@@ -1,0 +1,14 @@
+[Unit]
+Description=Config tracker watcher for %i
+ConditionPathExists=%h/.config/config-tracker/%i.conf
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.config/config-tracker/%i.conf
+Environment=INSTANCE=%i
+ExecStart=@BINDIR@/config-tracker-watch
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,9 @@
+[Unit]
+Description=Config tracker commit for %i
+ConditionPathExists=%h/.config/config-tracker/%i.conf
+
+[Service]
+Type=oneshot
+EnvironmentFile=%h/.config/config-tracker/%i.conf
+Environment=INSTANCE=%i
+ExecStart=@BINDIR@/config-tracker-commit
