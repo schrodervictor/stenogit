@@ -3,6 +3,13 @@
 * Status: accepted
 * Date: 2026-04-15
 
+> **Amended by [ADR-0009](0009-system-scope-default.md) (2026-04-16):**
+> In the new default *system* scope, the env file lives at
+> `/etc/stenogit/<name>.conf` and the timer drop-in at
+> `/etc/systemd/system/stenogit@<name>.timer.d/schedule.conf`. The
+> three-layer model below still stands as the rationale; only the paths
+> differ between system and user scope.
+
 ## Context and problem statement
 
 An instance has three different kinds of values:

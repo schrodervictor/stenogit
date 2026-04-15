@@ -3,6 +3,12 @@
 * Status: accepted
 * Date: 2026-04-15
 
+> **Amended by [ADR-0009](0009-system-scope-default.md) (2026-04-16):**
+> System-scope unit templates install to `$PREFIX/lib/systemd/system/`
+> instead of `$PREFIX/lib/systemd/user/`. User-scope templates are still
+> supported as opt-in and retain the original path. The FHS rationale
+> below stands unchanged.
+
 ## Context and problem statement
 
 There are two install audiences:
