@@ -57,7 +57,11 @@ ct_do_commit() {
 ct_main() {
     local dir="${DIR:-}"
     local instance="${INSTANCE:-default}"
-    local template="${MESSAGE_TEMPLATE:-auto: {date}}"
+    # Note: cannot use ${MESSAGE_TEMPLATE:-auto: {date}} — bash ${...}
+    # default-value parsing does not balance literal braces, so a `}`
+    # inside the default leaks into the expansion.
+    local template="${MESSAGE_TEMPLATE:-}"
+    [[ -n "$template" ]] || template='auto: {date}'
 
     ct_check_dir "$dir" || return 1
     ct_stage_all "$dir" || return 1
