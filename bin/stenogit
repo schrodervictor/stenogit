@@ -25,6 +25,8 @@
 
 _SG_SCOPE=system
 
+sg_err() { printf '%s\n' "$1" >&2; }
+
 sg_set_paths() {
     local scope="$1"
     _SG_SCOPE="$scope"
@@ -42,7 +44,7 @@ sg_require_root() {
         return 0
     fi
     if [[ "$(id -u)" -ne 0 ]]; then
-        printf 'stenogit: system mode requires root. Use sudo, or pass --user for per-user mode.\n' >&2
+        sg_err 'stenogit: system mode requires root. Use sudo, or pass --user for per-user mode.'
         return 1
     fi
 }
@@ -69,11 +71,11 @@ EOF
 sg_validate_name() {
     local name="$1"
     if [[ -z "$name" ]]; then
-        printf 'stenogit: instance name is required\n' >&2
+        sg_err 'stenogit: instance name is required'
         return 1
     fi
     if [[ ! "$name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-        printf 'stenogit: invalid instance name: %s (use [a-zA-Z0-9_-]+)\n' "$name" >&2
+        sg_err "stenogit: invalid instance name: $name (use [a-zA-Z0-9_-]+)"
         return 1
     fi
 }
@@ -110,11 +112,11 @@ sg_write_schedule_dropin() {
     local name="$1" interval="$2"
     local dir="$STENOGIT_SYSTEMD_DIR/stenogit@$name.timer.d"
     mkdir -p "$dir"
-    cat > "$dir/schedule.conf" <<EOF
-[Timer]
-OnUnitActiveSec=
-OnUnitActiveSec=$interval
-EOF
+    {
+        printf '[Timer]\n'
+        printf 'OnUnitActiveSec=\n'
+        printf 'OnUnitActiveSec=%s\n' "$interval"
+    } > "$dir/schedule.conf"
 }
 
 sg_remove_schedule_dropin() {
@@ -172,7 +174,7 @@ cmd_add() {
             --git-name)  git_name="$2";    shift 2 ;;
             --git-email) git_email="$2";   shift 2 ;;
             *)
-                printf 'stenogit: unknown option: %s\n' "$1" >&2
+                sg_err "stenogit: unknown option: $1"
                 return 1
                 ;;
         esac
@@ -181,12 +183,12 @@ cmd_add() {
     sg_validate_name "$name" || return 1
 
     if [[ ! -d "$dir" ]]; then
-        printf 'stenogit: directory does not exist: %s\n' "$dir" >&2
+        sg_err "stenogit: directory does not exist: $dir"
         return 1
     fi
 
     if [[ -n "$schedule" && "$watch" -eq 1 ]]; then
-        printf 'stenogit: --schedule and --watch are mutually exclusive\n' >&2
+        sg_err 'stenogit: --schedule and --watch are mutually exclusive'
         return 1
     fi
 
@@ -221,7 +223,7 @@ cmd_remove() {
         case "$1" in
             --user) scope="user"; shift ;;
             *)
-                printf 'stenogit: unknown option: %s\n' "$1" >&2
+                sg_err "stenogit: unknown option: $1"
                 return 1
                 ;;
         esac
@@ -237,7 +239,7 @@ cmd_remove() {
         elif [[ -f "$usr_dir/$name.conf" ]]; then
             scope="user"
         else
-            printf 'stenogit: no instance found: %s\n' "$name" >&2
+            sg_err "stenogit: no instance found: $name"
             return 1
         fi
     fi

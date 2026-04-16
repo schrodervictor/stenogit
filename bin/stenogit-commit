@@ -10,18 +10,20 @@
 # Exits 0 on success, including when there is nothing to commit (no-op).
 # Exits non-zero with a clear message on misconfiguration.
 
+sg_err() { printf '%s\n' "$1" >&2; }
+
 sg_check_dir() {
     local dir="$1"
     if [[ -z "$dir" ]]; then
-        printf 'stenogit-commit: DIR is required\n' >&2
+        sg_err 'stenogit-commit: DIR is required'
         return 1
     fi
     if [[ ! -d "$dir" ]]; then
-        printf 'stenogit-commit: directory does not exist: %s\n' "$dir" >&2
+        sg_err "stenogit-commit: directory does not exist: $dir"
         return 1
     fi
     if [[ ! -d "$dir/.git" ]]; then
-        printf 'stenogit-commit: not a git repository: %s (run `stenogit add` first)\n' "$dir" >&2
+        sg_err "stenogit-commit: not a git repository: $dir (run \`stenogit add\` first)"
         return 1
     fi
 }

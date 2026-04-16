@@ -14,6 +14,8 @@
 # All other env vars (INSTANCE, MESSAGE_TEMPLATE) are passed through to the
 # commit command unchanged.
 
+sgw_err() { printf '%s\n' "$1" >&2; }
+
 sgw_run_commit() {
     local cmd="${STENOGIT_COMMIT:-stenogit-commit}"
     "$cmd"
@@ -46,11 +48,11 @@ sgw_main() {
     local max_wait="${MAX_WAIT:-60}"
 
     if [[ -z "$dir" ]]; then
-        printf 'stenogit-watch: DIR is required\n' >&2
+        sgw_err 'stenogit-watch: DIR is required'
         return 1
     fi
     if [[ ! -d "$dir" ]]; then
-        printf 'stenogit-watch: directory does not exist: %s\n' "$dir" >&2
+        sgw_err "stenogit-watch: directory does not exist: $dir"
         return 1
     fi
 
