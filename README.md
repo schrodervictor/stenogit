@@ -122,26 +122,60 @@ full configuration model.
 
 ## Testing
 
-Tests run inside a container (podman by default, docker also supported):
+All tests run inside a container (podman by default, docker also
+supported) to avoid touching the host filesystem.
+
+### Unit tests
 
 ```sh
 make test                      # uses podman
 make CONTAINER=docker test     # uses docker
 ```
 
-73 bats tests cover the commit script, watch debounce loop (including
-max-wait ceiling), inotifywait integration (.git exclusion, nested
-directories), and the CLI (both system and user scope).
+73 bats tests (`tests/unit/`) cover the commit script, watch debounce
+loop (including max-wait ceiling), inotifywait integration (.git
+exclusion, nested directories), and the CLI (both system and user scope).
+
+### End-to-end tests
+
+```sh
+make test-e2e
+```
+
+5 bats tests (`tests/e2e/`) run against real systemd inside a podman
+container with systemd as PID 1. These exercise the full lifecycle:
+timer mode, schedule drop-ins, watch mode with real inotify, list, and
+remove cleanup. Requires podman (not docker, since docker containers
+cannot easily run systemd as PID 1).
+
+The e2e target handles the container lifecycle automatically: starts a
+systemd container, installs stenogit via `make install PREFIX=/usr`,
+runs the test suite, then tears down.
+
+### Linting
+
+```sh
+make lint
+```
+
+Runs shellcheck against all scripts and the test helper.
+
+### CI
+
+GitHub Actions (`.github/workflows/`) runs unit tests and shellcheck on
+every push and pull request to `master`.
 
 ## Project structure
 
 ```
-bin/                          Shell scripts (all logic here)
-systemd/system/               System-scope unit templates
+bin/                           Shell scripts (all logic here)
+systemd/system/                System-scope unit templates
 systemd/user/                  User-scope unit templates
-tests/                         Bats test suite
+tests/unit/                    Bats unit tests (hermetic, no systemd)
+tests/e2e/                     Bats end-to-end tests (real systemd)
 docs/                          Reference docs and ADRs
 examples/example.conf          Sample configuration
+.github/workflows/             CI configuration
 ```
 
 ## Design decisions
