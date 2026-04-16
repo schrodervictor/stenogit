@@ -13,6 +13,7 @@
 #   --watch                   Use inotify watcher (mutually exclusive with --schedule)
 #   --message <template>      Commit message template
 #   --debounce <seconds>      Debounce window for --watch (default 5)
+#   --max-wait <seconds>      Max time before forced commit (default 60; 0 disables)
 #   --git-name <name>         Git user.name for the tracked repo
 #   --git-email <email>       Git user.email for the tracked repo
 #

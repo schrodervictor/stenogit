@@ -9,18 +9,20 @@ that consumes it naturally looks. The CLI hides all three behind one
 
 ## 1. Per-instance conf file (most things)
 
-`~/.config/stenogit/<name>.conf`, a flat KEY=VALUE file loaded by
-the systemd unit via `EnvironmentFile=%h/.config/stenogit/%i.conf`.
-The script reads env vars with defaults:
+`/etc/stenogit/<name>.conf` (system scope, default) or
+`~/.config/stenogit/<name>.conf` (user scope, `--user`). Loaded by
+the systemd unit via `EnvironmentFile=`. The script reads env vars
+with defaults:
 
 ```sh
 DIR="${DIR:?DIR is required}"
 MESSAGE_TEMPLATE="${MESSAGE_TEMPLATE:-auto: {date}}"
 DEBOUNCE="${DEBOUNCE:-5}"
+MAX_WAIT="${MAX_WAIT:-60}"
 ```
 
-Good for: target dir, message template, debounce, and any future runtime
-knobs you might want to tweak per instance.
+Good for: target dir, message template, debounce, max-wait ceiling, and
+any future runtime knobs you might want to tweak per instance.
 
 ## 2. Per-repo git config (git identity)
 
@@ -87,22 +89,25 @@ Useful placeholders:
 The CLI hides all three layers:
 
 ```sh
-stenogit add nginx /etc/nginx \
+sudo stenogit add nginx /etc/nginx \
   --schedule 10min \
   --message "auto: nginx {date}" \
   --git-name "Stenogit" \
   --git-email "stenogit@localhost"
 ```
 
-Under the hood:
+Under the hood (system scope, the default):
 1. `git init` in `/etc/nginx` (skipped if already a repo).
 2. `git config user.name/email` in that repo.
-3. Write `~/.config/stenogit/nginx.conf` with `DIR=`,
-   `MESSAGE_TEMPLATE=`.
+3. Write `/etc/stenogit/nginx.conf` with `DIR=`,
+   `MESSAGE_TEMPLATE=`, `DEBOUNCE=`, `MAX_WAIT=`.
 4. If `--schedule`, write the timer drop-in
-   `~/.config/systemd/user/stenogit@nginx.timer.d/schedule.conf`.
-5. `systemctl --user daemon-reload`.
-6. `systemctl --user enable --now <appropriate-unit>`.
+   `/etc/systemd/system/stenogit@nginx.timer.d/schedule.conf`.
+5. `systemctl daemon-reload`.
+6. `systemctl enable --now <appropriate-unit>`.
+
+With `--user`, paths change to `~/.config/stenogit/` and
+`~/.config/systemd/user/`, and `systemctl --user` is used instead.
 
 ## Why the split
 

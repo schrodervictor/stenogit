@@ -24,27 +24,31 @@ Three executables plus a thin layer of systemd wiring:
 
 3. **`stenogit`**: CLI that hides systemd from end users.
    Subcommands:
-   - `add <name> <dir> [--schedule <interval> | --watch] [--message <tpl>] [--git-name <n>] [--git-email <e>] [--debounce <s>]`
-   - `remove <name>`
+   - `add <name> <dir> [--user] [--schedule <interval> | --watch] [--message <tpl>] [--git-name <n>] [--git-email <e>] [--debounce <s>] [--max-wait <s>]`
+   - `remove <name> [--user]`
    - `list`
    - `status <name>`
 
    `add` initialises the git repo in `<dir>`, sets the local git identity,
-   writes `~/.config/stenogit/<name>.conf`, optionally writes a
-   systemd timer drop-in for the schedule, and enables the appropriate
-   systemd user unit.
+   writes `/etc/stenogit/<name>.conf` (or `~/.config/stenogit/<name>.conf`
+   with `--user`), optionally writes a systemd timer drop-in for the
+   schedule, and enables the appropriate systemd unit. System scope is the
+   default and requires root; `--user` selects per-user units.
 
 Systemd wires the components. Unit files contain only `Type=`,
 `EnvironmentFile=`, `Environment=`, `ExecStart=`. No logic.
 
 ## Components: systemd units
 
+Two sets of unit templates (system/ and user/) with identical structure
+but different config paths. System variants use `/etc/stenogit/%i.conf`;
+user variants use `%h/.config/stenogit/%i.conf`.
+
 - `stenogit@.service`: `Type=oneshot`. ExecStart calls
-  `stenogit-commit`. `EnvironmentFile=%h/.config/stenogit/%i.conf`.
-  `Environment=INSTANCE=%i`.
-- `stenogit@.timer`: default schedule (e.g. `OnUnitActiveSec=15min`).
-  Per-instance schedule overridden via drop-in
-  (`stenogit@<name>.timer.d/schedule.conf`).
+  `stenogit-commit`. `Environment=INSTANCE=%i`.
+- `stenogit@.timer`: default schedule (`OnBootSec=1min`,
+  `OnUnitActiveSec=15min`). Per-instance schedule overridden via
+  drop-in (`stenogit@<name>.timer.d/schedule.conf`).
 - `stenogit-watch@.service`: long-running. ExecStart calls
   `stenogit-watch`. Same env-file pattern. `Restart=on-failure`.
 
@@ -56,9 +60,14 @@ bin/
   stenogit-commit
   stenogit-watch
 systemd/
-  stenogit@.service.in
-  stenogit@.timer
-  stenogit-watch@.service.in
+  system/
+    stenogit@.service.in
+    stenogit@.timer
+    stenogit-watch@.service.in
+  user/
+    stenogit@.service.in
+    stenogit@.timer
+    stenogit-watch@.service.in
 tests/
   test_helper.bash
   test_commit.bats
@@ -88,6 +97,9 @@ to `build/systemd/`. This lets the same unit work at any `PREFIX`.
 $PREFIX/bin/stenogit
 $PREFIX/bin/stenogit-commit
 $PREFIX/bin/stenogit-watch
+$PREFIX/lib/systemd/system/stenogit@.service
+$PREFIX/lib/systemd/system/stenogit@.timer
+$PREFIX/lib/systemd/system/stenogit-watch@.service
 $PREFIX/lib/systemd/user/stenogit@.service
 $PREFIX/lib/systemd/user/stenogit@.timer
 $PREFIX/lib/systemd/user/stenogit-watch@.service
@@ -95,9 +107,9 @@ $PREFIX/share/stenogit/example.conf
 ```
 
 `PREFIX` defaults to `/usr/local` (ad-hoc install). The future `.deb`
-overrides to `PREFIX=/usr`. Per-user state lives in
-`$XDG_CONFIG_HOME/stenogit/` (i.e. `~/.config/stenogit/`),
-never inside `$PREFIX`.
+overrides to `PREFIX=/usr`. System-scope state lives in `/etc/stenogit/`;
+per-user state lives in `$XDG_CONFIG_HOME/stenogit/` (i.e.
+`~/.config/stenogit/`). Neither is inside `$PREFIX`.
 
 ## Build system: Makefile
 

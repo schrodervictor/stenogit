@@ -138,11 +138,20 @@ systemctl --user list-timers                        # see scheduled units
 
 ## How this maps to stenogit
 
+Two sets of unit templates ship under `systemd/system/` and
+`systemd/user/`, identical in structure but with different config paths.
+System scope (the default) is used for machine-wide tracking; user
+scope (`--user`) for personal directories.
+
 - `stenogit@.service` (oneshot): runs the commit script, reads
-  `~/.config/stenogit/%i.conf` for `DIR`, `MESSAGE_TEMPLATE`.
-- `stenogit@.timer`: default schedule; per-instance overrides
-  via drop-ins written by `stenogit add --schedule …`.
+  `DIR`, `MESSAGE_TEMPLATE`, `DEBOUNCE`, `MAX_WAIT` from the conf file.
+  System variant uses `/etc/stenogit/%i.conf`; user variant uses
+  `%h/.config/stenogit/%i.conf`.
+- `stenogit@.timer`: default schedule (`OnBootSec=1min`,
+  `OnUnitActiveSec=15min`); per-instance overrides via drop-ins
+  written by `stenogit add --schedule …`.
 - `stenogit-watch@.service`: long-running inotify variant, same
-  conf file.
+  conf file. Debounce loop includes a max-wait ceiling (`MAX_WAIT`,
+  default 60s) to bound commit latency under sustained churn.
 - The `stenogit` CLI writes the conf, optionally writes the
   drop-in, runs `daemon-reload`, and enables the right unit.
