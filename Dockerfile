@@ -9,7 +9,9 @@ RUN apt-get update && \
         inotify-tools \
         make \
         shellcheck \
+        systemd \
     && rm -rf /var/lib/apt/lists/*
+
 
 WORKDIR /src
 

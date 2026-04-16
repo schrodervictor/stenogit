@@ -41,7 +41,7 @@ SCRIPTS := \
     bin/stenogit-commit \
     bin/stenogit-watch
 
-.PHONY: all build test lint image install uninstall clean
+.PHONY: all build test test-e2e lint image install uninstall clean
 
 all: build
 
@@ -59,11 +59,37 @@ image:
 	$(CONTAINER) build -t $(IMAGE) .
 
 test: image
-	$(CONTAINER) run --rm -v $(CURDIR):/src -w /src $(IMAGE) bats tests/
+	$(CONTAINER) run --rm -v $(CURDIR):/src -w /src $(IMAGE) bats tests/unit/
+
+# End-to-end tests against real systemd. Requires podman (not docker).
+# Starts a container with systemd as PID 1, installs stenogit, runs
+# the e2e bats suite, then tears down.
+test-e2e: image
+	@CID="$$(\
+		podman container run \
+			--detach \
+			--tmpfs /tmp \
+			--tmpfs /run \
+			--volume /sys/fs/cgroup:/sys/fs/cgroup:ro \
+			--volume $(CURDIR):/src \
+			--stop-signal SIGRTMIN+3 \
+			$(IMAGE) /lib/systemd/systemd \
+	)"; \
+	cleanup() { \
+		podman container kill --signal SIGRTMIN+3 "$$CID" >/dev/null 2>&1; \
+		podman container rm "$$CID" >/dev/null 2>&1; \
+	}; \
+	trap cleanup EXIT; \
+	sleep 2; \
+	podman exec "$$CID" bash -c " \
+		make -C /src build install PREFIX=/usr BUILD_DIR=/tmp/stenogit-build \
+		&& systemctl daemon-reload \
+		&& bats /src/tests/e2e/ \
+	"
 
 lint: image
 	$(CONTAINER) run --rm -v $(CURDIR):/src -w /src $(IMAGE) \
-		shellcheck --shell=bash $(SCRIPTS) tests/test_helper.bash
+		shellcheck --shell=bash $(SCRIPTS) tests/unit/test_helper.bash
 
 install: build
 	install -d $(DESTDIR)$(BINDIR)

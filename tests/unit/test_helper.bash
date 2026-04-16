@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Common helpers for all bats test files.
 
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. && pwd)"
 export BIN_DIR="$PROJECT_ROOT/bin"
 
 # Point HOME and the config dirs at the per-test temp dir so nothing
