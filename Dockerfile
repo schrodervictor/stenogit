@@ -8,6 +8,7 @@ RUN apt-get update && \
         git \
         inotify-tools \
         make \
+        shellcheck \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src

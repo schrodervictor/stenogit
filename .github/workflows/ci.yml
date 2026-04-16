@@ -21,3 +21,6 @@ jobs:
 
       - name: Run tests
         run: make CONTAINER=docker test
+
+      - name: Lint (shellcheck)
+        run: make CONTAINER=docker lint

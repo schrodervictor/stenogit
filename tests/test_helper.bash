@@ -2,7 +2,7 @@
 # Common helpers for all bats test files.
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BIN_DIR="$PROJECT_ROOT/bin"
+export BIN_DIR="$PROJECT_ROOT/bin"
 
 # Point HOME and the config dirs at the per-test temp dir so nothing
 # touches the real filesystem outside BATS_TEST_TMPDIR.

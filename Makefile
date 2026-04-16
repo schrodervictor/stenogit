@@ -41,7 +41,7 @@ SCRIPTS := \
     bin/stenogit-commit \
     bin/stenogit-watch
 
-.PHONY: all build test image install uninstall clean
+.PHONY: all build test lint image install uninstall clean
 
 all: build
 
@@ -60,6 +60,10 @@ image:
 
 test: image
 	$(CONTAINER) run --rm -v $(CURDIR):/src -w /src $(IMAGE) bats tests/
+
+lint: image
+	$(CONTAINER) run --rm -v $(CURDIR):/src -w /src $(IMAGE) \
+		shellcheck --shell=bash $(SCRIPTS) tests/test_helper.bash
 
 install: build
 	install -d $(DESTDIR)$(BINDIR)

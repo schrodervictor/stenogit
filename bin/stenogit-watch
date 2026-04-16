@@ -27,8 +27,7 @@ sgw_run_commit() {
 sgw_debounce_loop() {
     local debounce="$1"
     local max_wait="${2:-0}"
-    local line=""
-    while read -r line; do
+    while read -r; do
         local deadline=0
         if [[ "$max_wait" != "0" ]]; then
             deadline=$(( $(date +%s) + max_wait ))
@@ -36,7 +35,7 @@ sgw_debounce_loop() {
         # Drain further events; each new event resets the debounce timer.
         # Break when either the debounce expires (silence) or the
         # max-wait ceiling is reached (patience exhausted).
-        while read -r -t "$debounce" line; do
+        while read -r -t "$debounce"; do
             if [[ "$deadline" -gt 0 && $(date +%s) -ge "$deadline" ]]; then
                 break
             fi
