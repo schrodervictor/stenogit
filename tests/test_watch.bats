@@ -48,3 +48,19 @@ count_fires() {
     [ "$status" -ne 0 ]
     [[ "$output" == *"directory does not exist"* ]]
 }
+
+@test "commit failure does not stop the debounce loop" {
+    sgw_run_commit() { echo "FIRE" >> "$FIRES_FILE"; return 1; }
+    printf 'a\nb\n' | sgw_debounce_loop 0.5
+    [ "$(count_fires)" -eq 1 ]
+}
+
+@test "STENOGIT_COMMIT env var selects the commit command" {
+    # Restore real sgw_run_commit to test the env var path.
+    source "$BIN_DIR/stenogit-watch"
+    local tracker="$BATS_TEST_TMPDIR/tracker"
+    printf '#!/bin/bash\necho FIRE >> "%s"\n' "$FIRES_FILE" > "$tracker"
+    chmod +x "$tracker"
+    echo "ev1" | STENOGIT_COMMIT="$tracker" sgw_debounce_loop 0.5
+    [ "$(count_fires)" -eq 1 ]
+}

@@ -26,6 +26,7 @@ setup() {
     mkdir -p "$dir"
     run cmd_add "" "$dir" --user
     [ "$status" -ne 0 ]
+    [[ "$output" == *"instance name is required"* ]]
 }
 
 @test "add rejects names with shell metacharacters" {
@@ -271,4 +272,89 @@ setup() {
     run cmd_list
     [ "$status" -eq 0 ]
     [ -z "$output" ]
+}
+
+# ── argument parsing edge cases ─────────────────────────────────────
+
+@test "add rejects unknown option" {
+    local dir="$BATS_TEST_TMPDIR/d"
+    mkdir -p "$dir"
+    run cmd_add "myinst" "$dir" --user --bogus
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"unknown option: --bogus"* ]]
+}
+
+@test "add rejects names with whitespace" {
+    local dir="$BATS_TEST_TMPDIR/d"
+    mkdir -p "$dir"
+    run cmd_add "has space" "$dir" --user
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"invalid instance name"* ]]
+}
+
+@test "add with too few arguments prints usage" {
+    run cmd_add "onlyname"
+    [ "$status" -ne 0 ]
+}
+
+@test "remove rejects unknown option" {
+    run cmd_remove "myinst" --bogus
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"unknown option: --bogus"* ]]
+}
+
+@test "unknown subcommand fails" {
+    run sg_main "badcmd"
+    [ "$status" -ne 0 ]
+}
+
+@test "no subcommand prints usage" {
+    run sg_main ""
+    [ "$status" -eq 0 ]
+}
+
+# ── directory with spaces ───────────────────────────────────────────
+
+@test "add --user works with spaces in directory path" {
+    local dir="$BATS_TEST_TMPDIR/my target dir"
+    mkdir -p "$dir"
+    cmd_add "myinst" "$dir" --user
+    [ -d "$dir/.git" ]
+    local conf="$STENOGIT_USER_CONFIG_DIR/myinst.conf"
+    [ -f "$conf" ]
+    grep -qx "DIR=$dir" "$conf"
+}
+
+# ── default git identity ────────────────────────────────────────────
+
+@test "add --user default git identity is Stenogit" {
+    local dir="$BATS_TEST_TMPDIR/target"
+    mkdir -p "$dir"
+    cmd_add "myinst" "$dir" --user
+    [ "$(git -C "$dir" config user.name)" = "Stenogit" ]
+    [[ "$(git -C "$dir" config user.email)" == stenogit@* ]]
+}
+
+# ── remove scope mismatch ──────────────────────────────────────────
+
+@test "remove --user does not affect system instance" {
+    setup_system_paths
+    local dir="$BATS_TEST_TMPDIR/target"
+    mkdir -p "$dir"
+    cmd_add "myinst" "$dir"
+    [ -f "$STENOGIT_SYSTEM_CONFIG_DIR/myinst.conf" ]
+    # Remove in user scope is a no-op — system conf untouched.
+    cmd_remove "myinst" --user
+    [ -f "$STENOGIT_SYSTEM_CONFIG_DIR/myinst.conf" ]
+}
+
+@test "remove idempotent — second remove fails" {
+    local dir="$BATS_TEST_TMPDIR/target"
+    mkdir -p "$dir"
+    cmd_add "myinst" "$dir" --user
+    cmd_remove "myinst" --user
+    setup_system_paths
+    run cmd_remove "myinst"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"no instance found"* ]]
 }

@@ -161,3 +161,29 @@ setup() {
     run git -C "$dir" ls-files
     [ "${#lines[@]}" -eq 2 ]
 }
+
+@test "commits files with spaces in name" {
+    local dir
+    dir=$(make_git_repo)
+    echo data > "$dir/file with spaces.txt"
+    DIR="$dir" run sg_main
+    [ "$status" -eq 0 ]
+    run git -C "$dir" ls-files
+    [ "${#lines[@]}" -eq 1 ]
+}
+
+@test "INSTANCE defaults to 'default' when unset" {
+    local dir
+    dir=$(make_git_repo)
+    echo x > "$dir/f"
+    DIR="$dir" MESSAGE_TEMPLATE="inst={name}" sg_main
+    [ "$(git -C "$dir" log -1 --pretty=%s)" = "inst=default" ]
+}
+
+@test "empty INSTANCE falls back to 'default'" {
+    local dir
+    dir=$(make_git_repo)
+    echo x > "$dir/f"
+    DIR="$dir" INSTANCE="" MESSAGE_TEMPLATE="inst={name}" sg_main
+    [ "$(git -C "$dir" log -1 --pretty=%s)" = "inst=default" ]
+}
