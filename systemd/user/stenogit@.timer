@@ -1,0 +1,10 @@
+[Unit]
+Description=Stenogit timer for %i
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=15min
+Unit=stenogit@%i.service
+
+[Install]
+WantedBy=timers.target

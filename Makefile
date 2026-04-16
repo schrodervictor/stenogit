@@ -3,24 +3,38 @@ DESTDIR   ?=
 CONTAINER ?= podman
 IMAGE     ?= stenogit-test
 
-BINDIR   := $(PREFIX)/bin
-UNITDIR  := $(PREFIX)/lib/systemd/user
-SHAREDIR := $(PREFIX)/share/stenogit
+BINDIR         := $(PREFIX)/bin
+SYSTEM_UNITDIR := $(PREFIX)/lib/systemd/system
+USER_UNITDIR   := $(PREFIX)/lib/systemd/user
+SHAREDIR       := $(PREFIX)/share/stenogit
 
 BUILD_DIR := build
 
-UNIT_TEMPLATES := \
-    systemd/stenogit@.service.in \
-    systemd/stenogit-watch@.service.in
-UNIT_RENDERED := \
-    $(BUILD_DIR)/systemd/stenogit@.service \
-    $(BUILD_DIR)/systemd/stenogit-watch@.service
-UNIT_PLAIN := \
-    systemd/stenogit@.timer
-UNIT_COPIED := \
-    $(BUILD_DIR)/systemd/stenogit@.timer
+SYSTEM_UNIT_TEMPLATES := \
+    systemd/system/stenogit@.service.in \
+    systemd/system/stenogit-watch@.service.in
+SYSTEM_UNIT_RENDERED := \
+    $(BUILD_DIR)/systemd/system/stenogit@.service \
+    $(BUILD_DIR)/systemd/system/stenogit-watch@.service
+SYSTEM_UNIT_PLAIN := \
+    systemd/system/stenogit@.timer
+SYSTEM_UNIT_COPIED := \
+    $(BUILD_DIR)/systemd/system/stenogit@.timer
 
-BUILT_UNITS := $(UNIT_RENDERED) $(UNIT_COPIED)
+USER_UNIT_TEMPLATES := \
+    systemd/user/stenogit@.service.in \
+    systemd/user/stenogit-watch@.service.in
+USER_UNIT_RENDERED := \
+    $(BUILD_DIR)/systemd/user/stenogit@.service \
+    $(BUILD_DIR)/systemd/user/stenogit-watch@.service
+USER_UNIT_PLAIN := \
+    systemd/user/stenogit@.timer
+USER_UNIT_COPIED := \
+    $(BUILD_DIR)/systemd/user/stenogit@.timer
+
+SYSTEM_BUILT_UNITS := $(SYSTEM_UNIT_RENDERED) $(SYSTEM_UNIT_COPIED)
+USER_BUILT_UNITS   := $(USER_UNIT_RENDERED) $(USER_UNIT_COPIED)
+BUILT_UNITS        := $(SYSTEM_BUILT_UNITS) $(USER_BUILT_UNITS)
 
 SCRIPTS := \
     bin/stenogit \
@@ -50,8 +64,10 @@ test: image
 install: build
 	install -d $(DESTDIR)$(BINDIR)
 	install -m 0755 $(SCRIPTS) $(DESTDIR)$(BINDIR)/
-	install -d $(DESTDIR)$(UNITDIR)
-	install -m 0644 $(BUILT_UNITS) $(DESTDIR)$(UNITDIR)/
+	install -d $(DESTDIR)$(SYSTEM_UNITDIR)
+	install -m 0644 $(SYSTEM_BUILT_UNITS) $(DESTDIR)$(SYSTEM_UNITDIR)/
+	install -d $(DESTDIR)$(USER_UNITDIR)
+	install -m 0644 $(USER_BUILT_UNITS) $(DESTDIR)$(USER_UNITDIR)/
 	install -d $(DESTDIR)$(SHAREDIR)
 	install -m 0644 examples/example.conf $(DESTDIR)$(SHAREDIR)/
 
@@ -59,9 +75,12 @@ uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/stenogit
 	rm -f $(DESTDIR)$(BINDIR)/stenogit-commit
 	rm -f $(DESTDIR)$(BINDIR)/stenogit-watch
-	rm -f $(DESTDIR)$(UNITDIR)/stenogit@.service
-	rm -f $(DESTDIR)$(UNITDIR)/stenogit@.timer
-	rm -f $(DESTDIR)$(UNITDIR)/stenogit-watch@.service
+	rm -f $(DESTDIR)$(SYSTEM_UNITDIR)/stenogit@.service
+	rm -f $(DESTDIR)$(SYSTEM_UNITDIR)/stenogit@.timer
+	rm -f $(DESTDIR)$(SYSTEM_UNITDIR)/stenogit-watch@.service
+	rm -f $(DESTDIR)$(USER_UNITDIR)/stenogit@.service
+	rm -f $(DESTDIR)$(USER_UNITDIR)/stenogit@.timer
+	rm -f $(DESTDIR)$(USER_UNITDIR)/stenogit-watch@.service
 	rm -f $(DESTDIR)$(SHAREDIR)/example.conf
 
 clean:

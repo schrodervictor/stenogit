@@ -1,0 +1,9 @@
+[Unit]
+Description=Stenogit commit for %i
+ConditionPathExists=/etc/stenogit/%i.conf
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/stenogit/%i.conf
+Environment=INSTANCE=%i
+ExecStart=@BINDIR@/stenogit-commit
