@@ -1,4 +1,4 @@
-# 0007 — Commit script does not auto-init repositories
+# 0007 - Commit script does not auto-init repositories
 
 * Status: accepted
 * Date: 2026-04-15

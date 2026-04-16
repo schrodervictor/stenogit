@@ -1,4 +1,4 @@
-# Stenogit — Build Plan
+# Stenogit - Build Plan
 
 ## Goal
 
@@ -11,18 +11,18 @@ package-friendly (eventual `.deb`), no logic in systemd unit files.
 
 Three executables plus a thin layer of systemd wiring:
 
-1. **`stenogit-commit`** — pure shell script. Reads env vars (`DIR`,
+1. **`stenogit-commit`**: pure shell script. Reads env vars (`DIR`,
    `INSTANCE`, `MESSAGE_TEMPLATE`), stages all changes in `DIR`, commits
    if anything is staged, expanding placeholders in the message template.
    Idempotent: a no-op when there are no changes. Refuses to operate on a
    non-git directory (no auto-init).
 
-2. **`stenogit-watch`** — pure shell script. Runs `inotifywait -mr`
+2. **`stenogit-watch`**: pure shell script. Runs `inotifywait -mr`
    on `DIR`, debounces bursts (waits for a quiet window of `DEBOUNCE`
    seconds), then invokes `stenogit-commit` as a subprocess. Reads
    the same env vars plus `DEBOUNCE`.
 
-3. **`stenogit`** — CLI that hides systemd from end users.
+3. **`stenogit`**: CLI that hides systemd from end users.
    Subcommands:
    - `add <name> <dir> [--schedule <interval> | --watch] [--message <tpl>] [--git-name <n>] [--git-email <e>] [--debounce <s>]`
    - `remove <name>`
@@ -35,17 +35,17 @@ Three executables plus a thin layer of systemd wiring:
    systemd user unit.
 
 Systemd wires the components. Unit files contain only `Type=`,
-`EnvironmentFile=`, `Environment=`, `ExecStart=` — no logic.
+`EnvironmentFile=`, `Environment=`, `ExecStart=`. No logic.
 
-## Components — systemd units
+## Components: systemd units
 
-- `stenogit@.service` — `Type=oneshot`. ExecStart calls
+- `stenogit@.service`: `Type=oneshot`. ExecStart calls
   `stenogit-commit`. `EnvironmentFile=%h/.config/stenogit/%i.conf`.
   `Environment=INSTANCE=%i`.
-- `stenogit@.timer` — default schedule (e.g. `OnUnitActiveSec=15min`).
+- `stenogit@.timer`: default schedule (e.g. `OnUnitActiveSec=15min`).
   Per-instance schedule overridden via drop-in
   (`stenogit@<name>.timer.d/schedule.conf`).
-- `stenogit-watch@.service` — long-running. ExecStart calls
+- `stenogit-watch@.service`: long-running. ExecStart calls
   `stenogit-watch`. Same env-file pattern. `Restart=on-failure`.
 
 ## Repository layout
@@ -99,7 +99,7 @@ overrides to `PREFIX=/usr`. Per-user state lives in
 `$XDG_CONFIG_HOME/stenogit/` (i.e. `~/.config/stenogit/`),
 never inside `$PREFIX`.
 
-## Build system — Makefile
+## Build system: Makefile
 
 Variables:
 - `PREFIX ?= /usr/local`
@@ -108,14 +108,14 @@ Variables:
 - `IMAGE ?= stenogit-test`
 
 Targets:
-- `build` — render `systemd/*.in` → `build/systemd/*` with `@BINDIR@`
+- `build`: render `systemd/*.in` → `build/systemd/*` with `@BINDIR@`
   substituted to `$(PREFIX)/bin`.
-- `test` — build the test container image, run `bats tests/` inside it
+- `test`: build the test container image, run `bats tests/` inside it
   with the source mounted at `/src`.
-- `install` — copy `bin/`, `build/systemd/`, examples to
+- `install`: copy `bin/`, `build/systemd/`, examples to
   `$(DESTDIR)$(PREFIX)/...`.
-- `uninstall` — reverse of install.
-- `clean` — remove `build/`.
+- `uninstall`: reverse of install.
+- `clean`: remove `build/`.
 
 ## Testing strategy
 
@@ -144,7 +144,7 @@ so the edit-test cycle is fast.
 - Single event triggers exactly one commit invocation.
 - Burst of N events within debounce window triggers exactly one commit.
 - Two events separated by more than the window trigger two commits.
-- The actual `inotifywait` wiring is not unit-tested — the debounce
+- The actual `inotifywait` wiring is not unit-tested. The debounce
   loop is tested in isolation by feeding lines into stdin and observing
   invocations of a fake commit binary set via `STENOGIT_COMMIT`.
 
@@ -201,4 +201,4 @@ Bats sources the script and calls individual functions or `main` directly.
   skip init if already a repo, but still set identity if missing.
 - Default timer schedule: 15 min seems reasonable. Document as overridable.
 - Should `remove` also offer a `--purge` that deletes the git repo and
-  all commits? Probably no — too destructive for a CLI default.
+  all commits? Probably not; too destructive for a CLI default.

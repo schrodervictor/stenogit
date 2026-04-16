@@ -1,4 +1,4 @@
-# 0006 — FHS install layout, Makefile-driven
+# 0006 - FHS install layout, Makefile-driven
 
 * Status: accepted
 * Date: 2026-04-15
@@ -33,9 +33,9 @@ surprise sysadmins.
 
 A Makefile drives everything with these variables:
 
-- `PREFIX ?= /usr/local` — ad-hoc default. `.deb` overrides to `/usr`.
-- `DESTDIR ?=` — staging dir for `.deb` build.
-- `CONTAINER ?= podman` — for `make test`.
+- `PREFIX ?= /usr/local`: ad-hoc default. `.deb` overrides to `/usr`.
+- `DESTDIR ?=`: staging dir for `.deb` build.
+- `CONTAINER ?= podman`: for `make test`.
 
 Install layout:
 
@@ -54,7 +54,7 @@ Per-user state lives in `$XDG_CONFIG_HOME/stenogit/` (i.e.
 
 ## Consequences
 
-- No `~/.local`-flavored install path — the project does not pretend
+- No `~/.local`-flavored install path. The project does not pretend
   to be user-installable without root.
 - Local installs require `sudo make install` (or a user-owned PREFIX
   that the user sets explicitly).

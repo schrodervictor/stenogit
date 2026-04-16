@@ -1,4 +1,4 @@
-# 0003 — Configuration in three layers
+# 0003 - Configuration in three layers
 
 * Status: accepted
 * Date: 2026-04-15
@@ -28,7 +28,7 @@ least one of its consumers.
 - Each value should live where the tool that owns it naturally looks.
 - Editing a value with native tools (text editor, `git config`,
   `systemctl edit`) should Just Work.
-- The CLI exists to hide the layering — users do not need to know it.
+- The CLI exists to hide the layering; users do not need to know it.
 
 ## Considered options
 
@@ -50,10 +50,10 @@ Option 2. Three layers:
 ## Consequences
 
 - The commit script does not need to know about git identity at runtime
-  — the repo already has it.
+  because the repo already has it.
 - Schedule changes do not require touching the conf file; conf changes
   do not require touching systemd.
-- Three places to look when something is off — mitigated by
+- Three places to look when something is off, mitigated by
   `stenogit status` (future) and by the CLI being the canonical
   edit interface.
 - Bats tests exercise each layer in isolation.

@@ -1,4 +1,4 @@
-# 0002 — Multi-instance via systemd templated units
+# 0002 - Multi-instance via systemd templated units
 
 * Status: accepted
 * Date: 2026-04-15
@@ -31,7 +31,7 @@ unit-file count growing with the instance count.
 
 ## Decision
 
-Option 3 — templated units, with the instance name (`%i`) keying the
+Option 3. Templated units, with the instance name (`%i`) keying the
 per-instance configuration file at `~/.config/stenogit/<name>.conf`.
 
 ## Consequences

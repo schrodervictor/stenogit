@@ -1,4 +1,4 @@
-# 0004 — Logic in scripts, wiring in systemd units
+# 0004 - Logic in scripts, wiring in systemd units
 
 * Status: accepted
 * Date: 2026-04-15
@@ -41,5 +41,5 @@ fi
 - Unit files are short and review-friendly.
 - Re-targeting the tool (e.g. to OpenRC, or to a long-running daemon
   process model) only touches the wiring layer.
-- Scripts must be invocable standalone with env vars set — which they
+- Scripts must be invocable standalone with env vars set, which they
   already need to be, for tests.

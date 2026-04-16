@@ -1,4 +1,4 @@
-# 0005 — Tests run in a container (podman)
+# 0005 - Tests run in a container (podman)
 
 * Status: accepted
 * Date: 2026-04-15

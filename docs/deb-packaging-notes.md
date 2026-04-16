@@ -44,7 +44,7 @@ auto-installs `*.service`, `*.timer`, and `*.path` files placed in
 `daemon-reload` on install/upgrade and handles enable/disable on
 package operations.
 
-For templated units this still works — instances are user-managed, so
+For templated units this still works  --  instances are user-managed, so
 the package only ships the templates themselves.
 
 ## FHS implications for unit files

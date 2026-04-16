@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# stenogit-watch — long-running inotify watcher that triggers
+# stenogit-watch - long-running inotify watcher that triggers
 # stenogit-commit after a quiet window (DEBOUNCE seconds).
 #
 # Reads from environment:

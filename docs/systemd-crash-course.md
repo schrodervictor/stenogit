@@ -1,7 +1,7 @@
-# Systemd templated units — crash course
+# Systemd templated units: crash course
 
 Reference for the templated-unit pattern used by stenogit. This is
-not a decision document — it is preserved instructional material so future
+not a decision document; it is preserved instructional material so future
 sessions can be cleaned without losing context.
 
 ## The core idea
@@ -16,7 +16,7 @@ foo@alice.service   ← instance (alice = instance name)
 foo@bob.service     ← another instance, same template
 ```
 
-One file, many running copies — each parameterized by its instance name.
+One file, many running copies, each parameterized by its instance name.
 
 ## Specifiers (the magic %)
 
@@ -133,16 +133,16 @@ systemctl --user list-timers                        # see scheduled units
   short names like `dotfiles`, `nginx` this does not come up.
 
 - **`Type=oneshot`** is right for short-lived scripts like the commit
-  script — systemd waits for it to finish and tracks success/failure
+  script; systemd waits for it to finish and tracks success/failure
   correctly. Do not use the default `Type=simple` for short-lived scripts.
 
 ## How this maps to stenogit
 
-- `stenogit@.service` (oneshot) — runs the commit script, reads
+- `stenogit@.service` (oneshot): runs the commit script, reads
   `~/.config/stenogit/%i.conf` for `DIR`, `MESSAGE_TEMPLATE`.
-- `stenogit@.timer` — default schedule; per-instance overrides
+- `stenogit@.timer`: default schedule; per-instance overrides
   via drop-ins written by `stenogit add --schedule …`.
-- `stenogit-watch@.service` — long-running inotify variant, same
+- `stenogit-watch@.service`: long-running inotify variant, same
   conf file.
 - The `stenogit` CLI writes the conf, optionally writes the
   drop-in, runs `daemon-reload`, and enables the right unit.

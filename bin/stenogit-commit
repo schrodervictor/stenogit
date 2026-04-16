@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# stenogit-commit — stage and commit any changes in $DIR.
+# stenogit-commit - stage and commit any changes in $DIR.
 #
 # Reads from environment:
 #   DIR              (required) target directory; must already be a git repo
@@ -57,7 +57,7 @@ sg_do_commit() {
 sg_main() {
     local dir="${DIR:-}"
     local instance="${INSTANCE:-default}"
-    # Note: cannot use ${MESSAGE_TEMPLATE:-auto: {date}} — bash ${...}
+    # Note: cannot use ${MESSAGE_TEMPLATE:-auto: {date}} -- bash ${...}
     # default-value parsing does not balance literal braces, so a `}`
     # inside the default leaks into the expansion.
     local template="${MESSAGE_TEMPLATE:-}"

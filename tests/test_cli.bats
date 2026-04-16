@@ -11,7 +11,7 @@ setup() {
     sg_systemctl() { echo "$@" >> "$SYSTEMCTL_LOG"; }
 }
 
-# ── name validation (scope-independent) ─────────────────────────────
+### validation: name and directory
 
 @test "add rejects names with a slash" {
     local dir="$BATS_TEST_TMPDIR/d"
@@ -43,7 +43,7 @@ setup() {
     [[ "$output" == *"does not exist"* ]]
 }
 
-# ── user mode (--user) ──────────────────────────────────────────────
+### user mode: --user flag
 
 @test "add --user initialises a git repo in the target" {
     local dir="$BATS_TEST_TMPDIR/target"
@@ -128,7 +128,7 @@ setup() {
     grep -q "^--user " "$SYSTEMCTL_LOG"
 }
 
-# ── system mode (default) ──────────────────────────────────────────
+### system mode: default scope
 
 @test "add (system default) writes conf to system config dir" {
     setup_system_paths
@@ -173,7 +173,7 @@ setup() {
     [[ "$output" == *"--user"* ]]
 }
 
-# ── remove ──────────────────────────────────────────────────────────
+### remove: conf, units, drop-ins
 
 @test "remove --user deletes the conf file" {
     local dir="$BATS_TEST_TMPDIR/target"
@@ -230,7 +230,7 @@ setup() {
     [[ "$output" == *"no instance found"* ]]
 }
 
-# ── list ────────────────────────────────────────────────────────────
+### list: scope display
 
 @test "list shows user instances with scope" {
     setup_system_paths
@@ -274,7 +274,7 @@ setup() {
     [ -z "$output" ]
 }
 
-# ── argument parsing edge cases ─────────────────────────────────────
+### arg parsing: invalid inputs
 
 @test "add rejects unknown option" {
     local dir="$BATS_TEST_TMPDIR/d"
@@ -313,7 +313,7 @@ setup() {
     [ "$status" -eq 0 ]
 }
 
-# ── directory with spaces ───────────────────────────────────────────
+### edge case: directory name with spaces
 
 @test "add --user works with spaces in directory path" {
     local dir="$BATS_TEST_TMPDIR/my target dir"
@@ -325,7 +325,7 @@ setup() {
     grep -qx "DIR=$dir" "$conf"
 }
 
-# ── default git identity ────────────────────────────────────────────
+### defaults: git identity
 
 @test "add --user default git identity is Stenogit" {
     local dir="$BATS_TEST_TMPDIR/target"
@@ -335,7 +335,7 @@ setup() {
     [[ "$(git -C "$dir" config user.email)" == stenogit@* ]]
 }
 
-# ── remove scope mismatch ──────────────────────────────────────────
+### remove: scope mismatch
 
 @test "remove --user does not affect system instance" {
     setup_system_paths
@@ -343,12 +343,12 @@ setup() {
     mkdir -p "$dir"
     cmd_add "myinst" "$dir"
     [ -f "$STENOGIT_SYSTEM_CONFIG_DIR/myinst.conf" ]
-    # Remove in user scope is a no-op — system conf untouched.
+    # Remove in user scope is a no-op; system conf untouched.
     cmd_remove "myinst" --user
     [ -f "$STENOGIT_SYSTEM_CONFIG_DIR/myinst.conf" ]
 }
 
-@test "remove idempotent — second remove fails" {
+@test "remove idempotent: second remove fails" {
     local dir="$BATS_TEST_TMPDIR/target"
     mkdir -p "$dir"
     cmd_add "myinst" "$dir" --user

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# stenogit — CLI that hides systemd from end users.
+# stenogit - CLI that hides systemd from end users.
 #
 # Subcommands:
 #   add <name> <dir> [options]   Register a new tracked directory

@@ -1,7 +1,7 @@
 # Parameterization layers
 
 Reference for how a stenogit instance is configured. Preserved
-instructional material — see ADR-0003 for the decision and rationale.
+instructional material (see ADR-0003 for the decision and rationale).
 
 There are three distinct kinds of parameters, each living where the tool
 that consumes it naturally looks. The CLI hides all three behind one
@@ -9,7 +9,7 @@ that consumes it naturally looks. The CLI hides all three behind one
 
 ## 1. Per-instance conf file (most things)
 
-`~/.config/stenogit/<name>.conf` — a flat KEY=VALUE file loaded by
+`~/.config/stenogit/<name>.conf`, a flat KEY=VALUE file loaded by
 the systemd unit via `EnvironmentFile=%h/.config/stenogit/%i.conf`.
 The script reads env vars with defaults:
 
@@ -38,11 +38,11 @@ holds `GIT_USER_NAME=` / `GIT_USER_EMAIL=` only as inputs to
 them.
 
 The same applies to any other git knob: `commit.gpgsign=false`,
-`core.autocrlf`, etc. — set on the repo, not the runtime env.
+`core.autocrlf`, etc. Set them on the repo, not the runtime env.
 
 ## 3. Template defaults + drop-ins (schedule)
 
-Schedule is not really a script parameter — it is a systemd thing.
+Schedule is not really a script parameter; it is a systemd thing.
 Default lives in `stenogit@.timer`, override per instance via
 drop-in:
 
@@ -76,10 +76,10 @@ git commit -m "$msg"
 ```
 
 Useful placeholders:
-- `{date}` — ISO-8601 timestamp
-- `{count}` — number of files staged
-- `{host}` — `hostname`
-- `{name}` — instance name (from `INSTANCE` env, injected by systemd via
+- `{date}`: ISO-8601 timestamp
+- `{count}`: number of files staged
+- `{host}`: `hostname`
+- `{name}`: instance name (from `INSTANCE` env, injected by systemd via
   `Environment=INSTANCE=%i`)
 
 ## What `stenogit add` does
