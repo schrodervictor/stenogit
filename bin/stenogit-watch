@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 #
 # stenogit-watch - long-running inotify watcher that triggers
-# stenogit-commit after a quiet window (DEBOUNCE seconds).
+# stenogit-commit after a quiet window (DEBOUNCE seconds), with an
+# upper bound (MAX_WAIT seconds) that forces a commit even under
+# sustained churn.
 #
 # Reads from environment:
 #   DIR              (required) directory to watch (recursive)
 #   DEBOUNCE         (optional) quiet-window seconds, default 5
+#   MAX_WAIT         (optional) ceiling seconds, default 60; 0 disables
 #   STENOGIT_COMMIT  (optional) commit command, default "stenogit-commit"
 #
 # All other env vars (INSTANCE, MESSAGE_TEMPLATE) are passed through to the
@@ -18,12 +21,20 @@ sgw_run_commit() {
 
 sgw_debounce_loop() {
     local debounce="$1"
+    local max_wait="${2:-0}"
     local line
     while read -r line; do
-        # Drain further events; each new event resets the timer.
-        # When `read -t` times out the inner loop ends and we fire.
+        local deadline=0
+        if [[ "$max_wait" != "0" ]]; then
+            deadline=$(( $(date +%s) + max_wait ))
+        fi
+        # Drain further events; each new event resets the debounce timer.
+        # Break when either the debounce expires (silence) or the
+        # max-wait ceiling is reached (patience exhausted).
         while read -r -t "$debounce" line; do
-            :
+            if [[ "$deadline" -gt 0 && $(date +%s) -ge "$deadline" ]]; then
+                break
+            fi
         done
         sgw_run_commit || true
     done
@@ -32,6 +43,7 @@ sgw_debounce_loop() {
 sgw_main() {
     local dir="${DIR:-}"
     local debounce="${DEBOUNCE:-5}"
+    local max_wait="${MAX_WAIT:-60}"
 
     if [[ -z "$dir" ]]; then
         printf 'stenogit-watch: DIR is required\n' >&2
@@ -43,7 +55,7 @@ sgw_main() {
     fi
 
     inotifywait -m -r -q -e modify,create,delete,move "$dir" \
-        | sgw_debounce_loop "$debounce"
+        | sgw_debounce_loop "$debounce" "$max_wait"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

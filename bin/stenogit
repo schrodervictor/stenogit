@@ -59,6 +59,7 @@ Options for add:
   --watch                   Use inotify watcher (mutually exclusive with --schedule)
   --message <template>      Commit message template
   --debounce <seconds>      Debounce window for --watch (default 5)
+  --max-wait <seconds>      Max time before forced commit (default 60; 0 disables)
   --git-name <name>         Git user.name for the tracked repo
   --git-email <email>       Git user.email for the tracked repo
 EOF
@@ -88,13 +89,14 @@ sg_init_repo() {
 }
 
 sg_write_conf() {
-    local name="$1" dir="$2" message="$3" debounce="$4"
+    local name="$1" dir="$2" message="$3" debounce="$4" max_wait="$5"
     mkdir -p "$STENOGIT_CONFIG_DIR"
     local conf="$STENOGIT_CONFIG_DIR/$name.conf"
     {
         printf 'DIR=%s\n' "$dir"
         printf 'MESSAGE_TEMPLATE=%s\n' "$message"
         printf 'DEBOUNCE=%s\n' "$debounce"
+        printf 'MAX_WAIT=%s\n' "$max_wait"
     } > "$conf"
 }
 
@@ -147,7 +149,7 @@ sg_disable_all() {
 
 cmd_add() {
     local name="" dir="" message="auto: {date}"
-    local schedule="" watch=0 debounce=5
+    local schedule="" watch=0 debounce=5 max_wait=60
     local git_name="" git_email=""
     local scope="system"
 
@@ -165,6 +167,7 @@ cmd_add() {
             --watch)     watch=1;          shift ;;
             --message)   message="$2";     shift 2 ;;
             --debounce)  debounce="$2";    shift 2 ;;
+            --max-wait)  max_wait="$2";    shift 2 ;;
             --git-name)  git_name="$2";    shift 2 ;;
             --git-email) git_email="$2";   shift 2 ;;
             *)
@@ -192,7 +195,7 @@ cmd_add() {
     fi
 
     sg_init_repo "$dir" "$git_name" "$git_email" || return 1
-    sg_write_conf "$name" "$dir" "$message" "$debounce" || return 1
+    sg_write_conf "$name" "$dir" "$message" "$debounce" "$max_wait" || return 1
 
     if [[ "$watch" -eq 1 ]]; then
         sg_enable_watch "$name" || return 1

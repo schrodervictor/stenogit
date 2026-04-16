@@ -77,6 +77,7 @@ setup() {
     grep -qx "DIR=$dir" "$conf"
     grep -qx "MESSAGE_TEMPLATE=hello {date}" "$conf"
     grep -qx "DEBOUNCE=7" "$conf"
+    grep -qx "MAX_WAIT=60" "$conf"
 }
 
 @test "add --user --schedule writes a timer drop-in with the interval" {
