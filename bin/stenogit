@@ -12,8 +12,8 @@
 #   --schedule <interval>     Use a systemd timer (e.g. 10min, 1h)
 #   --watch                   Use inotify watcher (mutually exclusive with --schedule)
 #   --message <template>      Commit message template
-#   --debounce <seconds>      Debounce window for --watch (default 5)
-#   --max-wait <seconds>      Max time before forced commit (default 60; 0 disables)
+#   --debounce <seconds>      Debounce window for --watch
+#   --max-wait <seconds>      Max time before forced commit; 0 disables
 #   --git-name <name>         Git user.name for the tracked repo
 #   --git-email <email>       Git user.email for the tracked repo
 #
@@ -23,10 +23,17 @@
 #
 # Tests override STENOGIT_CONFIG_DIR and STENOGIT_SYSTEMD_DIR directly.
 
+SG_DEFAULT_MESSAGE='auto: {date}'
+SG_DEFAULT_DEBOUNCE=5
+SG_DEFAULT_MAX_WAIT=60
+
 _SG_SCOPE=system
 
 sg_err() { printf '%s\n' "$1" >&2; }
 
+# Sets global STENOGIT_CONFIG_DIR and STENOGIT_SYSTEMD_DIR based on
+# scope. Tests override these via the STENOGIT_*_CONFIG_DIR and
+# STENOGIT_*_SYSTEMD_DIR env vars.
 sg_set_paths() {
     local scope="$1"
     _SG_SCOPE="$scope"
@@ -50,7 +57,7 @@ sg_require_root() {
 }
 
 sg_usage() {
-    cat <<'EOF'
+    cat <<EOF
 Usage:
   stenogit add <name> <dir> [options]
   stenogit remove <name> [--user]
@@ -60,9 +67,9 @@ Options for add:
   --user                    Use per-user systemd units (default: system)
   --schedule <interval>     Use a systemd timer (e.g. 10min, 1h)
   --watch                   Use inotify watcher (mutually exclusive with --schedule)
-  --message <template>      Commit message template
-  --debounce <seconds>      Debounce window for --watch (default 5)
-  --max-wait <seconds>      Max time before forced commit (default 60; 0 disables)
+  --message <template>      Commit message template (default: "$SG_DEFAULT_MESSAGE")
+  --debounce <seconds>      Debounce window for --watch (default: $SG_DEFAULT_DEBOUNCE)
+  --max-wait <seconds>      Max time before forced commit (default: $SG_DEFAULT_MAX_WAIT; 0 disables)
   --git-name <name>         Git user.name for the tracked repo
   --git-email <email>       Git user.email for the tracked repo
 EOF
@@ -85,10 +92,10 @@ sg_init_repo() {
     local git_name="${2:-Stenogit}"
     local git_email="${3:-stenogit@$(hostname)}"
     if [[ ! -d "$dir/.git" ]]; then
-        git -C "$dir" init -q
+        git -C "$dir" init -q || return 1
     fi
-    git -C "$dir" config user.name "$git_name"
-    git -C "$dir" config user.email "$git_email"
+    git -C "$dir" config user.name "$git_name" || return 1
+    git -C "$dir" config user.email "$git_email" || return 1
 }
 
 sg_write_conf() {
@@ -146,13 +153,14 @@ sg_enable_watch() {
 
 sg_disable_all() {
     local name="$1"
+    # Services may not be enabled; ignore errors.
     sg_systemctl disable --now "stenogit@$name.timer" 2>/dev/null || true
     sg_systemctl disable --now "stenogit-watch@$name.service" 2>/dev/null || true
 }
 
 cmd_add() {
-    local name="" dir="" message="auto: {date}"
-    local schedule="" watch=0 debounce=5 max_wait=60
+    local name="" dir="" message="$SG_DEFAULT_MESSAGE"
+    local schedule="" watch=0 debounce="$SG_DEFAULT_DEBOUNCE" max_wait="$SG_DEFAULT_MAX_WAIT"
     local git_name="" git_email=""
     local scope="system"
 

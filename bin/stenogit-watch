@@ -7,12 +7,15 @@
 #
 # Reads from environment:
 #   DIR              (required) directory to watch (recursive)
-#   DEBOUNCE         (optional) quiet-window seconds, default 5
-#   MAX_WAIT         (optional) ceiling seconds, default 60; 0 disables
+#   DEBOUNCE         (optional) quiet-window seconds
+#   MAX_WAIT         (optional) ceiling seconds; 0 disables
 #   STENOGIT_COMMIT  (optional) commit command, default "stenogit-commit"
 #
 # All other env vars (INSTANCE, MESSAGE_TEMPLATE) are passed through to the
 # commit command unchanged.
+
+SGW_DEFAULT_DEBOUNCE=5
+SGW_DEFAULT_MAX_WAIT=60
 
 sgw_err() { printf '%s\n' "$1" >&2; }
 
@@ -24,7 +27,7 @@ sgw_run_commit() {
 sgw_debounce_loop() {
     local debounce="$1"
     local max_wait="${2:-0}"
-    local line
+    local line=""
     while read -r line; do
         local deadline=0
         if [[ "$max_wait" != "0" ]]; then
@@ -44,8 +47,8 @@ sgw_debounce_loop() {
 
 sgw_main() {
     local dir="${DIR:-}"
-    local debounce="${DEBOUNCE:-5}"
-    local max_wait="${MAX_WAIT:-60}"
+    local debounce="${DEBOUNCE:-$SGW_DEFAULT_DEBOUNCE}"
+    local max_wait="${MAX_WAIT:-$SGW_DEFAULT_MAX_WAIT}"
 
     if [[ -z "$dir" ]]; then
         sgw_err 'stenogit-watch: DIR is required'

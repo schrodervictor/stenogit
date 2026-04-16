@@ -5,10 +5,12 @@
 # Reads from environment:
 #   DIR              (required) target directory; must already be a git repo
 #   INSTANCE         (optional) instance name, used in {name} placeholder
-#   MESSAGE_TEMPLATE (optional) commit message template, default "auto: {date}"
+#   MESSAGE_TEMPLATE (optional) commit message template
 #
 # Exits 0 on success, including when there is nothing to commit (no-op).
 # Exits non-zero with a clear message on misconfiguration.
+
+SG_DEFAULT_MESSAGE='auto: {date}'
 
 sg_err() { printf '%s\n' "$1" >&2; }
 
@@ -29,7 +31,7 @@ sg_check_dir() {
 }
 
 sg_stage_all() {
-    git -C "$1" add -A
+    git -C "$1" add -A || return 1
 }
 
 sg_has_staged_changes() {
@@ -53,7 +55,7 @@ sg_expand_template() {
 }
 
 sg_do_commit() {
-    git -C "$1" commit -q -m "$2"
+    git -C "$1" commit -q -m "$2" || return 1
 }
 
 sg_main() {
@@ -63,7 +65,7 @@ sg_main() {
     # default-value parsing does not balance literal braces, so a `}`
     # inside the default leaks into the expansion.
     local template="${MESSAGE_TEMPLATE:-}"
-    [[ -n "$template" ]] || template='auto: {date}'
+    [[ -n "$template" ]] || template="$SG_DEFAULT_MESSAGE"
 
     sg_check_dir "$dir" || return 1
     sg_stage_all "$dir" || return 1
