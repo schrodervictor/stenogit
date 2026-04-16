@@ -54,7 +54,10 @@ sgw_main() {
         return 1
     fi
 
-    inotifywait -m -r -q -e modify,create,delete,move "$dir" \
+    inotifywait --monitor --recursive --quiet \
+        --exclude '/\.git/' \
+        --event modify,create,delete,move \
+        "$dir" \
         | sgw_debounce_loop "$debounce" "$max_wait"
 }
 

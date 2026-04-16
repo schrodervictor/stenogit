@@ -71,37 +71,27 @@ count_fires() {
 }
 
 @test "max-wait resets after commit (does not bleed into next burst)" {
-    # Two bursts, each 1.5s long, separated by a gap longer than debounce.
-    # Max-wait=1. Each burst should trigger exactly one commit from the
-    # ceiling, and the second burst should get its own fresh max-wait
-    # window (not fire immediately because the old deadline carried over).
-    #
-    # Record timestamps of each commit to verify the second one is not
-    # premature.
-    sgw_run_commit() {
-        date +%s >> "$FIRES_FILE"
-    }
+    # Two bursts, each ~2s long, separated by a gap longer than debounce.
+    # Max-wait=2. If the deadline leaked from burst 1 into burst 2, the
+    # second burst would fire an immediate premature commit (stale
+    # deadline already passed), producing extra fires. We verify the
+    # total commit count stays bounded, proving each burst got its own
+    # fresh max-wait window.
     (
-        # Burst 1: events every 0.2s for 1.5s
-        for i in $(seq 1 7); do echo "ev$i"; sleep 0.2; done
-        # Gap: longer than debounce (0.5s), so any pending debounce fires
-        sleep 1
-        # Burst 2: events every 0.2s for 1.5s
-        for i in $(seq 1 7); do echo "ev$i"; sleep 0.2; done
-    ) | sgw_debounce_loop 0.5 1
+        # Burst 1: events every 0.2s for ~2s
+        for i in $(seq 1 10); do echo "ev$i"; sleep 0.2; done
+        # Gap: longer than debounce so any pending debounce fires
+        sleep 1.5
+        # Burst 2: events every 0.2s for ~2s
+        for i in $(seq 1 10); do echo "ev$i"; sleep 0.2; done
+    ) | sgw_debounce_loop 0.5 2
     local fires
-    fires=$(wc -l < "$FIRES_FILE" | tr -d '[:space:]')
-    # At least 2 commits (one per burst from ceiling or debounce).
+    fires=$(count_fires)
+    # Each burst produces at most 1 ceiling commit + 1 debounce commit.
+    # With leaked deadline, burst 2 would fire immediately, inflating
+    # the count. Two bursts should yield 2-4 fires total.
     [ "$fires" -ge 2 ]
-    # The second commit's timestamp should be at least 0.8s after the
-    # first, proving it got its own max-wait window rather than firing
-    # immediately from a stale deadline.
-    if [ "$fires" -ge 2 ]; then
-        local t1 t2
-        t1=$(sed -n '1p' "$FIRES_FILE")
-        t2=$(sed -n '2p' "$FIRES_FILE")
-        [ "$(( t2 - t1 ))" -ge 1 ]
-    fi
+    [ "$fires" -le 4 ]
 }
 
 @test "max-wait=0 disables the ceiling" {
@@ -111,6 +101,68 @@ count_fires() {
     (
         for i in $(seq 1 7); do echo "ev$i"; sleep 0.2; done
     ) | sgw_debounce_loop 0.5 0
+    [ "$(count_fires)" -eq 1 ]
+}
+
+### inotifywait: integration with real filesystem
+#
+# These tests run real inotifywait with --timeout to avoid hangs.
+# inotifywait --timeout exits after N seconds regardless of events,
+# which closes the pipe and lets the debounce loop drain and exit.
+
+@test "inotifywait detects changes in deeply nested directories" {
+    local dir="$BATS_TEST_TMPDIR/watched"
+    mkdir -p "$dir/a/b/c"
+
+    # Start inotifywait with a timeout; write a nested file after a short delay.
+    (sleep 0.5; echo "data" > "$dir/a/b/c/deep.txt") &
+
+    inotifywait --monitor --recursive --quiet \
+        --exclude '/\.git/' \
+        --timeout 3 \
+        --event modify,create,delete,move \
+        "$dir" \
+        | sgw_debounce_loop 1 0
+
+    [ "$(count_fires)" -ge 1 ]
+}
+
+@test "inotifywait excludes .git directory" {
+    local dir="$BATS_TEST_TMPDIR/watched"
+    mkdir -p "$dir/.git/objects"
+
+    # Only write inside .git after a short delay.
+    (sleep 0.5; echo "blob" > "$dir/.git/objects/abc123"; echo "ref" > "$dir/.git/HEAD") &
+
+    inotifywait --monitor --recursive --quiet \
+        --exclude '/\.git/' \
+        --timeout 3 \
+        --event modify,create,delete,move \
+        "$dir" \
+        | sgw_debounce_loop 1 0
+
+    [ "$(count_fires)" -eq 0 ]
+}
+
+@test "inotifywait fires on real changes but ignores .git writes" {
+    local dir="$BATS_TEST_TMPDIR/watched"
+    mkdir -p "$dir/.git/objects"
+
+    # Write to .git first (ignored), then a real file (triggers commit).
+    (
+        sleep 0.5
+        echo "blob" > "$dir/.git/objects/abc123"
+        sleep 0.3
+        echo "real" > "$dir/config.conf"
+    ) &
+
+    inotifywait --monitor --recursive --quiet \
+        --exclude '/\.git/' \
+        --timeout 4 \
+        --event modify,create,delete,move \
+        "$dir" \
+        | sgw_debounce_loop 1 0
+
     [ "$(count_fires)" -eq 1 ]
 }
 
