@@ -58,6 +58,9 @@ sgw_main() {
         return 1
     fi
 
+    # Commit any pre-existing changes before entering the watch loop.
+    sgw_run_commit || true
+
     inotifywait --monitor --recursive --quiet \
         --exclude '/\.git/' \
         --event modify,create,delete,move \

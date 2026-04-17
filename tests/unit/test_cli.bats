@@ -112,6 +112,22 @@ setup() {
     [[ "$output" == *"mutually exclusive"* ]]
 }
 
+@test "add --watch errors when inotifywait is not installed" {
+    local dir="$BATS_TEST_TMPDIR/target"
+    mkdir -p "$dir"
+    # Hide inotifywait by using an empty PATH prefix with no match.
+    command() {
+        if [[ "$1" == "-v" && "$2" == "inotifywait" ]]; then
+            return 1
+        fi
+        builtin command "$@"
+    }
+    run cmd_add "myinst" "$dir" --user --watch
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"inotifywait"* ]]
+    [[ "$output" == *"inotify-tools"* ]]
+}
+
 @test "add --user issues a daemon-reload" {
     local dir="$BATS_TEST_TMPDIR/target"
     mkdir -p "$dir"

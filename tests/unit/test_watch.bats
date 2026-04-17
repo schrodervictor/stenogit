@@ -104,6 +104,32 @@ count_fires() {
     [ "$(count_fires)" -eq 1 ]
 }
 
+### initial commit: pre-existing changes
+
+@test "sgw_main runs an initial commit before entering the watch loop" {
+    local dir="$BATS_TEST_TMPDIR/watched"
+    mkdir -p "$dir"
+    # Mock inotifywait to exit immediately with no output.
+    mkdir -p "$BATS_TEST_TMPDIR/bin"
+    printf '#!/bin/bash\n' > "$BATS_TEST_TMPDIR/bin/inotifywait"
+    chmod +x "$BATS_TEST_TMPDIR/bin/inotifywait"
+    export PATH="$BATS_TEST_TMPDIR/bin:$PATH"
+    DIR="$dir" sgw_main
+    [ "$(count_fires)" -eq 1 ]
+}
+
+@test "sgw_main initial commit plus events produces correct fire count" {
+    local dir="$BATS_TEST_TMPDIR/watched"
+    mkdir -p "$dir"
+    # Mock inotifywait to emit one event then exit.
+    mkdir -p "$BATS_TEST_TMPDIR/bin"
+    printf '#!/bin/bash\necho "event"\n' > "$BATS_TEST_TMPDIR/bin/inotifywait"
+    chmod +x "$BATS_TEST_TMPDIR/bin/inotifywait"
+    export PATH="$BATS_TEST_TMPDIR/bin:$PATH"
+    DIR="$dir" sgw_main
+    [ "$(count_fires)" -eq 2 ]
+}
+
 ### inotifywait: integration with real filesystem
 #
 # These tests run real inotifywait with --timeout to avoid hangs.

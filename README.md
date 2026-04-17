@@ -132,7 +132,7 @@ make test                      # uses podman
 make CONTAINER=docker test     # uses docker
 ```
 
-73 bats tests (`tests/unit/`) cover the commit script, watch debounce
+76 bats tests (`tests/unit/`) cover the commit script, watch debounce
 loop (including max-wait ceiling), inotifywait integration (.git
 exclusion, nested directories), and the CLI (both system and user scope).
 
