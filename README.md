@@ -120,6 +120,13 @@ the conf file. Timer schedule overrides use systemd drop-ins.
 See [docs/parameterization.md](docs/parameterization.md) for the
 full configuration model.
 
+## Debugging
+
+If a service is failing or not committing as expected, see
+[docs/debugging.md](docs/debugging.md) for a step-by-step guide
+covering `systemctl status`, journal inspection, common exit codes,
+and how to test scripts outside systemd.
+
 ## Testing
 
 All tests run inside a container (podman by default, docker also
