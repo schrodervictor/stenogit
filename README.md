@@ -120,6 +120,13 @@ the conf file. Timer schedule overrides use systemd drop-ins.
 See [docs/parameterization.md](docs/parameterization.md) for the
 full configuration model.
 
+## inotify and resource usage
+
+The `--watch` mode uses Linux's inotify subsystem, which is
+event-driven and essentially free for typical directory sizes.
+See [docs/inotify-resources.md](docs/inotify-resources.md) for details
+on watch limits, memory cost, and how to raise the limit if needed.
+
 ## Debugging
 
 If a service is failing or not committing as expected, see
