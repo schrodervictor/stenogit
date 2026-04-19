@@ -62,17 +62,14 @@ test: image
 	$(CONTAINER) run --rm -v $(CURDIR):/src -w /src $(IMAGE) bats tests/unit/
 
 # End-to-end tests against real systemd. Requires podman (not docker).
-# Starts a container with systemd as PID 1, installs stenogit, runs
-# the e2e bats suite, then tears down.
+# Podman natively supports systemd containers: when it detects
+# /lib/systemd/systemd as the entrypoint, it sets up tmpfs mounts,
+# cgroups, and the stop signal automatically.
 test-e2e: image
 	@CID="$$(\
 		podman container run \
 			--detach \
-			--tmpfs /tmp \
-			--tmpfs /run \
-			--volume /sys/fs/cgroup:/sys/fs/cgroup:ro \
 			--volume $(CURDIR):/src \
-			--stop-signal SIGRTMIN+3 \
 			$(IMAGE) /lib/systemd/systemd \
 	)"; \
 	cleanup() { \

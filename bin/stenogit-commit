@@ -55,7 +55,7 @@ sg_expand_template() {
 }
 
 sg_do_commit() {
-    git -C "$1" commit -q -m "$2" || return 1
+    git -C "$1" commit --quiet -m "$2" || return 1
 }
 
 sg_main() {
