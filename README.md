@@ -120,6 +120,15 @@ the conf file. Timer schedule overrides use systemd drop-ins.
 See [docs/parameterization.md](docs/parameterization.md) for the
 full configuration model.
 
+## Reducing diff noise
+
+Some files are rewritten by their owning process in ways that produce
+large, meaningless diffs (for example, JSON config files with shuffled
+keys). Git's clean filter mechanism can canonicalize content on its
+way into the index, so commits and diffs only reflect real changes.
+See [docs/reducing-diff-noise.md](docs/reducing-diff-noise.md) for
+the pattern and example setup.
+
 ## inotify and resource usage
 
 The `--watch` mode uses Linux's inotify subsystem, which is
